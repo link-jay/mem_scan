@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 
-# TODO: find data
-# TODO: modify data
-
 import sys
 
 def get_maps(pid: str) -> list[tuple[int, int]]:
@@ -21,8 +18,8 @@ def get_maps(pid: str) -> list[tuple[int, int]]:
 def find_target(addr_maps: list[tuple[int, int]], target: bytes) -> list[str]:
     target_list: list[str] = []
     with open("/proc/"+pid+"/mem", "rb") as mem:
-        offset = 0
         for addr_map in addr_maps:
+            offset     = 0
             start: int = addr_map[0]
             end  : int = addr_map[1]
             size : int = end - start
@@ -64,7 +61,20 @@ def modify_text(target_list: list[str], value: str, target_length: int):
 def modify_int(target_list: list[str], value: int):
     return modify_target(target_list, value.to_bytes(4, "little"))
 
-def read_line(addr_maps):
+def find_again(pid: str, target_list: list[str], target_value: bytes, length: int):
+    new_list = []
+    with open("/proc/"+pid+"/mem", "rb") as mem:
+        for target in target_list:
+            try:
+                mem.seek(int(target, 16))
+                if (current_value := mem.read(length)) == target_value:
+                    new_list.append(target)
+            except OSError:
+                continue
+                    
+    return new_list
+
+def read_line(pid, addr_maps):
     target_list = []
     data_type   = "string"
     while True:
@@ -81,9 +91,20 @@ def read_line(addr_maps):
                     modify_text(target_list, command[1], len(command[1]))
                 case "int":
                     modify_int(target_list, int(command[1]))
+
         elif command[0] == "list":
             for target in target_list:
                 print(f"find it at {target}.")
+
+        elif command[0] == "again":
+            match data_type:
+                case "string":
+                    target_list = find_again(pid, target_list, bytes(command[1], "utf-8"), len(command[1]))
+                case "int":
+                    target_list = find_again(pid, target_list, int(command[1]).to_bytes(4, "little"), 4)
+            for target in target_list:
+                print(f"find it at {target}")
+                
         else:
             match command[0]:
                 case "string":
@@ -104,6 +125,9 @@ def read_line(addr_maps):
 if __name__ == "__main__":
     
     assert len(sys.argv) == 2, "Script accepts two args, script_name and pid."
+    
     pid       = sys.argv[1]
     addr_maps = get_maps(pid)
-    read_line(addr_maps)
+    for addr_map in addr_maps:
+        print(f"Scaned {addr_map}.")
+    read_line(pid, addr_maps)

@@ -4,8 +4,8 @@
   * [x] find text
   * [x] modify text
   * [x] find data
-  * [ ] modify data
-
+  * [x] modify data
+  * [x] search many times
 ## Example ##
 Open two session and run follow command:
 
