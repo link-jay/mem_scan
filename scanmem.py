@@ -80,7 +80,10 @@ def read_line(addr_maps):
                 case "string":
                     modify_text(target_list, command[1], len(command[1]))
                 case "int":
-                    modify_int(target_list, command[1])
+                    modify_int(target_list, int(command[1]))
+        elif command[0] == "list":
+            for target in target_list:
+                print(f"find it at {target}.")
         else:
             match command[0]:
                 case "string":

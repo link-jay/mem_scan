@@ -3,11 +3,10 @@
 
 int main()
 {
-  int num    = 1234321;
-  char buf[] = "hello, world"
-  
+  int num = 1234321;
+  char buf[] = "hello, world";
   while (1) {
-    printf("%d.%s", num, buf);
+    printf("%d.%s\n", num, buf);
     sleep(2);
   }
   
