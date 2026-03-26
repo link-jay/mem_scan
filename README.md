@@ -10,12 +10,12 @@
 
 ## Command
 
-`help`: print help massage.
-`string str`: search for the `str` in memary.
-`int num`: search for the `num` in memary.
-`again [str|num]`: search `str/num` again by last type. It can also use with 0 args to search original value again.
-`list`: list the addresses that find in command `string/int`.
-`set value`: modify the values in the `list`.
+`help`: print help massage.  
+`string str`: search for the `str` in memary.  
+`int num`: search for the `num` in memary.  
+`again [str|num]`: search `str/num` again by last type. It can also use with 0 args to search original value again.  
+`list`: list the addresses that find in command `string/int`.  
+`set value`: modify the values in the `list`.  
 
 ## Example
 
