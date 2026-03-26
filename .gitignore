@@ -1,2 +1,5 @@
-.mypy_cache
-example_maps.txt
+venv/
+.mypy_cache/
+test/*.out
+test/test_script.sh
+TAGS

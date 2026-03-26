@@ -4,8 +4,10 @@
 int main()
 {
   
+  int i = 2101; const int j = 8926518;
   while (1) {
-    printf("%s\n", "hello, world");
+    ++i;
+    printf("%d.%s. Here is %d\n", i, "hello, world", j);
     sleep(2);
   }
   
