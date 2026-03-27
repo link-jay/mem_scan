@@ -7,8 +7,8 @@ A simple memory scan program in python.
 * [x] modify text
 * [x] find int32
 * [x] modify int32
-* [ ] find int64
-* [ ] modify int64
+* [x] find int64
+* [x] modify int64
 * [ ] find float32
 * [ ] find float64
 * [x] search many times
@@ -19,7 +19,8 @@ A simple memory scan program in python.
 `string str`: search for the `str` in memory.  
 `int num`: search for the signed `num` in memory.  
 `uint num`: search for the unsigned `num` in memory.  
-`uint64 num`: search for the unsigned `num` in memory.  
+`int64 num`: search for the signed `num64` in memory.  
+`uint64 num`: search for the unsigned `num64` in memory.  
 `again [str|num]`: search `str/num` again by last type. It can also use with 0 args to search original value again.  
 `list`: list the addresses that find in search command.  
 `set value`: modify the values in the `list`.  
