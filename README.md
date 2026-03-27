@@ -1,11 +1,16 @@
-# Scanmem
+# mem_scan
+A simple memory scan program in python.
 
 ## Target
 
 * [x] find text
 * [x] modify text
-* [x] find data
-* [x] modify data
+* [x] find int32
+* [x] modify int32
+* [ ] find int64
+* [ ] modify int64
+* [ ] find float32
+* [ ] find float64
 * [x] search many times
 
 ## Command
