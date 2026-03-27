@@ -3,6 +3,11 @@
 import sys
 import readline
 
+DEBUG_V = False
+def DEBUG(debug_warning: str, run_warning: str):
+    if DEBUG_V: assert False, debug_warning
+    else: print(run_warning)
+
 def get_maps(pid: str) -> list[tuple[int, int]]:
     addr_maps: list[tuple] = []
     with open("/proc/"+pid+"/maps") as f:
@@ -38,33 +43,21 @@ def find_text(addr_maps: list[tuple[int, int]], target_value: str) -> list[str]:
     b_value = bytes(target_value, "utf-8")
     return find_target(addr_maps, b_value)
 
-def find_int(addr_maps: list[tuple[int, int]], target_value: int) -> list[str]:
+def find_uint(addr_maps: list[tuple[int, int]], target_value: int) -> list[str]:
     b_value = target_value.to_bytes(4, "little")
     return find_target(addr_maps, b_value)
     
-def modify_target(target_list: list[str], new_value: bytes):
-    with open("/proc/"+pid+"/mem", "rb+") as mem:
-        for addr in target_list:
-            try:
-                mem.seek(int(addr, 16))
-                mem.write(new_value)
-            except OSError:
-                continue
-    return
-            
-def modify_text(target_list: list[str], mod_value: str, value_len: int):
-    b_value = bytes(mod_value, "utf-8")
-    if len(b_value) > value_len:
-        print("Length of string value should not be longer than original.", file=sys.stderr)
-        return
-    return modify_target(target_list, b_value)
+def find_int(addr_maps: list[tuple[int, int]], target_value: int) -> list[str]:
+    b_value = target_value.to_bytes(4, "little", signed=True)
+    return find_target(addr_maps, b_value)
 
-def modify_int(target_list: list[str], mod_value: int):
-    if mod_value > (1 << 32):
-        print("Num value over than 4294967296 have not be supposed yet.", file=sys.stderr)
-        return
-    b_value = mod_value.to_bytes(4, "little")
-    return modify_target(target_list, b_value)
+def find_uint64(addr_maps: list[tuple[int, int]], target_value: int) -> list[str]:
+    b_value = target_value.to_bytes(8, "little")
+    return find_target(addr_maps, b_value)
+
+def find_int64(addr_maps: list[tuple[int, int]], target_value: int) -> list[str]:
+    b_value = target_value.to_bytes(8, "little", signed=True)
+    return find_target(addr_maps, b_value)
 
 def find_again(pid: str, addr_list: list[str], new_value: bytes, value_len: int):
     new_list = []
@@ -83,12 +76,44 @@ def list_addr(addr_list: list[str]):
     if addr_list:
         for addr in addr_list:
             print(f"find it at {addr}.")
+    else:
+        print("not found.")
+
+def modify_target(target_list: list[str], new_value: bytes):
+    with open("/proc/"+pid+"/mem", "rb+") as mem:
+        for addr in target_list:
+            try:
+                mem.seek(int(addr, 16))
+                mem.write(new_value)
+            except OSError:
+                continue
+    return
+            
+def modify_text(target_list: list[str], mod_value: str):
+    b_value = bytes(mod_value, "utf-8")
+    return modify_target(target_list, b_value)
+
+def modify_uint(target_list: list[str], mod_value: int):
+    b_value = mod_value.to_bytes(4, "little")
+    return modify_target(target_list, b_value)
+
+def modify_int(target_list: list[str], mod_value: int):
+    b_value = mod_value.to_bytes(4, "little", signed=True)
+    return modify_target(target_list, b_value)
+
+def modify_uint64(target_list: list[str], mod_value: int):
+    b_value = mod_value.to_bytes(8, "little")
+    return modify_target(target_list, b_value)
+
+def modify_int64(target_list: list[str], mod_value: int):
+    b_value = mod_value.to_bytes(8, "little", signed=True)
+    return modify_target(target_list, b_value)
 
 def read_line(pid, addr_maps):
     ori_value  = None
     addr_list  = []
     value_type = "string"
-    value_len  = 0
+    ori_value_len  = 0
     
     while True:
         try:
@@ -103,55 +128,119 @@ def read_line(pid, addr_maps):
             
         elif command[0] == "help":
             print("help message:")
-            print("- string/int: \tsearch string/int value in mem.")
-            print("- set:\t\tmodify value(s) which was/were found in string/int.")
-            print("- list:\t\tlist the address(es) which was/were found in string/int.")
-            print("- help:\t\tprint this message.")
+            print("- string: \tsearch string value in memory.")
+            print("- int: \t\tsearch signed 4 bytes number value in memory")
+            print("- uint: \tsearch unsigned 4 bytes number value in memory")
+            print("- int64: \tsearch signed 8 bytes number value in memory")
+            print("- uint64: \tsearch unsigned 8 bytes number value in memory")
+            print("- set: \t\tmodify value(s) which was/were search command.")
+            print("- list: \tlist the address(es) which was/were found in search command.")
+            print("- help: \tprint this message.")
             
         elif command[0] == "string":
             if len(command) < 2:
-                print("Must accept 1 str argument.", file=sys.stderr)
+                print("`string` must accept 1 str argument.", file=sys.stderr)
                 continue
-            ori_value = " ".join(command[1:])
-            value_type= "string"
-            value_len = len(bytes(ori_value, "utf-8"))
-            addr_list = find_text(addr_maps, ori_value)
+            ori_value     = " ".join(command[1:])
+            value_type    = "string"
+            ori_value_len = len(bytes(ori_value, "utf-8"))
+            addr_list     = find_text(addr_maps, ori_value)
             list_addr(addr_list)
             
-        elif command[0] == "int":
+        elif command[0] == "uint":
             if len(command) != 2:
-                print("Must accept 1 num argument.", file=sys.stderr)
+                print("`uint` must accept 1 num argument.", file=sys.stderr)
                 continue
             try:
                 ori_value = int(command[1])
             except ValueError:
-                print("The `int` accept a num value.", file=sys.stderr)
+                print("`uint` accept a num value.", file=sys.stderr)
                 continue
-            value_type = "int"
-            value_len  = 4
-            addr_list  = find_int(addr_maps, ori_value)
+            value_type    = "uint"
+            ori_value_len = 4
+            addr_list     = find_uint(addr_maps, ori_value)
             list_addr(addr_list)
                 
+        elif command[0] == "int":
+            if len(command) != 2:
+                print("`int` must accept 1 num argument.", file=sys.stderr)
+                continue
+            try:
+                ori_value = int(command[1])
+            except ValueError:
+                print("`int` accept a num value.", file=sys.stderr)
+                continue
+            value_type    = "int"
+            ori_value_len = 4
+            addr_list     = find_int(addr_maps, ori_value)
+            list_addr(addr_list)
+
+        elif command[0] == "uint64":
+            if len(command) != 2:
+                print("`uint64` must accept 1 num argument.", file=sys.stderr)
+                continue
+            try:
+                ori_value = int(command[1])
+            except ValueError:
+                print("`uint64` accept a num value.", file=sys.stderr)
+                continue
+            value_type    = "uint64"
+            ori_value_len = 8
+            addr_list     = find_uint64(addr_maps, ori_value)
+            list_addr(addr_list)
+
+        elif command[0] == "int64":
+            if len(command) != 2:
+                print("`int64` must accept 1 num argument.", file=sys.stderr)
+                continue
+            try:
+                ori_value = int(command[1])
+            except ValueError:
+                print("`int64` accept a num value.", file=sys.stderr)
+                continue
+            value_type    = "int64"
+            ori_value_len = 8
+            addr_list     = find_int64(addr_maps, ori_value)
+            list_addr(addr_list)
+
         elif command[0] == "again":
             if len(command) == 1:
                 command.append(ori_value)
             match value_type:
-                # TODO: fix it
                 case "string":
                     new_value  = bytes(" ".join(command[1:]), "utf-8")
                     value_tyep = "string"
-                    value_len  = len(new_value)
-                    addr_list  = find_again(pid, addr_list, new_value, value_len)
+                    ori_value_len  = len(new_value)
+                    addr_list  = find_again(pid, addr_list, new_value, ori_value_len)
                     ori_value  = new_value.decode("utf-8")
-                case "int":
-                    if len(command) > 2: print("Must accept 1 num argument or none.", file=sys.stderr)
+                case "uint":
+                    if len(command) > 2: print("`uint` must accept 1 num argument or none.", file=sys.stderr)
                     new_value  = int(command[1]).to_bytes(4, "little")
+                    value_type = "uint"
+                    addr_list  = find_again(pid, addr_list, new_value, ori_value_len)
+                    ori_value  = int.from_bytes(new_value, "little")
+                case "int":
+                    if len(command) > 2: print("`int` must accept 1 num argument or none.", file=sys.stderr)
+                    new_value  = int(command[1]).to_bytes(4, "little", signed=True)
                     value_type = "int"
-                    value_len  = 4
-                    addr_list  = find_again(pid, addr_list, new_value, 4)
-                    ori_value  = int.from_bytes(new_value, byteorder="little")
-            for target_addr in addr_list:
-                print(f"find it at {target_addr}")
+                    addr_list  = find_again(pid, addr_list, new_value, ori_value_len)
+                    ori_value  = int.from_bytes(new_value, "little", signed=True)
+                case "uint64":
+                    if len(command) > 2: print("`uint64` must accept 1 num argument or none.", file=sys.stderr)
+                    new_value  = int(command[1]).to_bytes(8, "little")
+                    value_type = "uint64"
+                    addr_list  = find_again(pid, addr_list, new_value, ori_value_len)
+                    ori_value  = int.from_bytes(new_value, "little")
+                case "int64":
+                    if len(command) > 2: print("`int64` must accept 1 num argument or none.", file=sys.stderr)
+                    new_value  = int(command[1]).to_bytes(8, "little", signed=True)
+                    value_type = "int64"
+                    addr_list  = find_again(pid, addr_list, new_value, ori_value_len)
+                    ori_value  = int.from_bytes(new_value, "little", signed=True)
+                case _:
+                    DEBUG(f"again {value_type} have not achieved.",
+                          "Here should not be arrive.")
+            list_addr(addr_list)
                 
         elif command[0] == "list":
             list_addr(addr_list)
@@ -166,17 +255,56 @@ def read_line(pid, addr_maps):
             match value_type:
                 case "string":
                     mod_value = " ".join(command[1:])
-                    modify_text(addr_list, mod_value, value_len)
+                    if len(bytes(mod_value, "utf-8")) > ori_value_len:
+                        print("Length of string value should not be longer than original.", file=sys.stderr)
+                        return
+                    modify_text(addr_list, mod_value)
+                case "uint":
+                    try:
+                        mod_value = int(command[1])
+                    except ValueError:
+                        print("`uint` accept a num value.", file=sys.stderr)
+                        continue
+                    if mod_value > (1 << 32 - 1):
+                        print("`uint` do not accept a num value more than 4 bytes, please use `uint64`", file=sys.stderr)
+                        return
+                    modify_uint(addr_list, mod_value)
                 case "int":
                     try:
                         mod_value = int(command[1])
                     except ValueError:
-                        print("The `int` accept a num value.", file=sys.stderr)
+                        print("`int` accept a num value.", file=sys.stderr)
+                        continue
+                    if mod_value > (1 << 31 - 1) or mod_value < -(1 << 31 - 1):
+                        print("`int` do not accept a num value more than 4 bytes, please use `int64`.", file=sys.stderr)
                         continue
                     modify_int(addr_list, mod_value)
-
+                case "uint64":
+                    try:
+                        mod_value = int(command[1])
+                    except ValueError:
+                        print("`uint64` accept a num value.", file=sys.stderr)
+                        continue
+                    if mod_value > (1 << 64 - 1):
+                        print("`uint64` do not accept a num value more than 8 bytes.", file=sys.stderr)
+                        continue
+                    modify_uint64(addr_list, mod_value)
+                case "int64":
+                    try:
+                        mod_value = int(command[1])
+                    except ValueError:
+                        print("`int64` accept a num value.", file=sys.stderr)
+                        continue
+                    if mod_value > (1 << 63 - 1) or mod_value < -(1 << 63 - 1):
+                        print("`int64` do not accept a num value more than 8 bytes.", file=sys.stderr)
+                        continue
+                    modify_int64(addr_list, mod_value)
+                case _:
+                    DEBUG(f"set {value_type} have not achieved.",
+                          "Here should not be arrived.")
         else:
-            print("UnkownCommand. Please input `string/int` to find data or `set` to modify value.", file=sys.stderr)
+            DEBUG(f"{command[0]} have not achieved.",
+                  "UnkownCommand. Please input `string/int` to find data or `set` to modify value.")
 
 if __name__ == "__main__":
     assert len(sys.argv) == 2, "Script accepts two args, script_name and pid."

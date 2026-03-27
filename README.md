@@ -1,20 +1,28 @@
-# Scanmem
+# mem_scan
+A simple memory scan program in python.
 
 ## Target
 
 * [x] find text
 * [x] modify text
-* [x] find data
-* [x] modify data
+* [x] find int32
+* [x] modify int32
+* [x] find int64
+* [x] modify int64
+* [ ] find float32
+* [ ] find float64
 * [x] search many times
 
 ## Command
 
 `help`: print help massage.  
-`string str`: search for the `str` in memary.  
-`int num`: search for the `num` in memary.  
-`again [str|num]`: search `str/num` again by last type. It can also use with 0 args to search original value again.  
-`list`: list the addresses that find in command `string/int`.  
+`string str`: Search `str` value in memory.  
+`int num`: Search signed `num32` value in memory.  
+`uint num`: Search unsigned `num32` value in memory.  
+`int64 num`: Search signed `num64` value in memory.  
+`uint64 num`: Search unsigned `num64` value in memory.  
+`again [str|num]`: Search a value again by last type of search.It can accept 0 args to search original value.  
+`list`: List the addresses found in search command.  
 `set value`: modify the values in the `list`.  
 
 ## Example
