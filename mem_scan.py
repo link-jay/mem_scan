@@ -247,7 +247,7 @@ def read_line(pid, addr_maps):
 
         elif command[0] == "set":
             if not addr_list:
-                print("Please use string/int to search value first.", file=sys.stderr)
+                print("Please use search command to search value first.", file=sys.stderr)
                 continue
             if len(command) < 2:
                 print("Please input a value to modify.", file=sys.stderr)
@@ -257,7 +257,7 @@ def read_line(pid, addr_maps):
                     mod_value = " ".join(command[1:])
                     if len(bytes(mod_value, "utf-8")) > ori_value_len:
                         print("Length of string value should not be longer than original.", file=sys.stderr)
-                        return
+                        continue
                     modify_text(addr_list, mod_value)
                 case "uint":
                     try:

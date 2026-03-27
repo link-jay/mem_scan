@@ -10,7 +10,9 @@ A simple memory scan program in python.
 * [x] find int64
 * [x] modify int64
 * [ ] find float32
+* [ ] modify float32
 * [ ] find float64
+* [ ] modify float64
 * [x] search many times
 
 ## Command
