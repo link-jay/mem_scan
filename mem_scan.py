@@ -2,6 +2,7 @@
 
 import sys
 import readline
+import struct
 
 DEBUG_V = False
 def DEBUG(debug_warning: str, run_warning: str):
@@ -59,6 +60,10 @@ def find_int64(addr_maps: list[tuple[int, int]], target_value: int) -> list[str]
     b_value = target_value.to_bytes(8, "little", signed=True)
     return find_target(addr_maps, b_value)
 
+def find_double(addr_maps: list[tuple[int, int]], target_value: float) -> list[str]:
+    b_value = struct.pack("<d", target_value)
+    return find_target(addr_maps, b_value)
+
 def find_again(pid: str, addr_list: list[str], new_value: bytes, value_len: int):
     new_addr_list = []
     with open("/proc/"+pid+"/mem", "rb") as mem:
@@ -109,6 +114,10 @@ def modify_int64(target_list: list[str], mod_value: int):
     b_value = mod_value.to_bytes(8, "little", signed=True)
     return modify_target(target_list, b_value)
 
+def modify_double(target_list: list[str], mod_value: float):
+    b_value = struct.pack("<d", mod_value)
+    return modify_target(target_list, b_value)
+
 def read_line(pid, addr_maps):
     ori_value  = None
     addr_list  = []
@@ -129,10 +138,11 @@ def read_line(pid, addr_maps):
         elif command[0] == "help":
             print("help message:")
             print("- string: \tsearch string value in memory.")
-            print("- int: \t\tsearch signed 4 bytes number value in memory")
-            print("- uint: \tsearch unsigned 4 bytes number value in memory")
-            print("- int64: \tsearch signed 8 bytes number value in memory")
-            print("- uint64: \tsearch unsigned 8 bytes number value in memory")
+            print("- int: \t\tsearch signed 4 bytes int number value in memory.")
+            print("- uint: \tsearch unsigned 4 bytes int number value in memory.")
+            print("- int64: \tsearch signed 8 bytes int number value in memory.")
+            print("- uint64: \tsearch unsigned 8 bytes int number value in memory.")
+            print("- double: \tsearch 8 bytes float number value in memory.")
             print("- set: \t\tmodify value(s) which was/were search command.")
             print("- list: \tlist the address(es) which was/were found in search command.")
             print("- help: \tprint this message.")
@@ -203,6 +213,20 @@ def read_line(pid, addr_maps):
             addr_list     = find_int64(addr_maps, ori_value)
             list_addr(addr_list)
 
+        elif command[0] == "double":
+            if len(command) != 2:
+                print("`double` must accept 1 num argument.", file=sys.stderr)
+                continue
+            try:
+                ori_value = float(command[1])
+            except ValueError:
+                print("`double` accept a num value.", file=sys.stderr)
+                continue
+            value_type    = "double"
+            ori_value_len = 8
+            addr_list     = find_double(addr_maps, ori_value)
+            list_addr(addr_list)
+
         elif command[0] == "again":
             if len(command) == 1:
                 command.append(ori_value)
@@ -237,6 +261,12 @@ def read_line(pid, addr_maps):
                     value_type = "int64"
                     addr_list  = find_again(pid, addr_list, new_value, ori_value_len)
                     ori_value  = int.from_bytes(new_value, "little", signed=True)
+                case "double":
+                    if len(command) > 2: print("`double` must accept 1 num argument or none.", file=sys.stderr)
+                    new_value  = struct.pack("<d", float(command[1]))
+                    value_type = "double"
+                    addr_list  = find_again(pid, addr_list, new_value, ori_value_len)
+                    ori_value  = struct.unpack("<d", new_value)[0]
                 case _:
                     DEBUG(f"again {value_type} have not achieved.",
                           "Here should not be arrive.")
@@ -299,6 +329,19 @@ def read_line(pid, addr_maps):
                         print("`int64` tyep do not accept a num value more than 8 bytes.", file=sys.stderr)
                         continue
                     modify_int64(addr_list, mod_value)
+                case "double":
+                    try:
+                        mod_value = float(command[1])
+                    except ValueError:
+                        print("`double` command accept a num value.", file=sys.stderr)
+                        continue
+                    if (mod_value > sys.float_info.max
+                        or mod_value < -sys.float_info.max
+                        or -sys.float_info.min < mod_value < 0
+                        or 0 < mod_value < sys.float_info.min):
+                        print("`double` tyep do not accept a num value more than 8 bytes.", file=sys.stderr)
+                        continue
+                    modify_double(addr_list, mod_value)
                 case _:
                     DEBUG(f"set {value_type} have not achieved.",
                           "Here should not be arrived.")
