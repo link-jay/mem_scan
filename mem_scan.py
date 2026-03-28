@@ -2,11 +2,21 @@
 
 import sys
 import readline
+import struct
 
 DEBUG_V = False
 def DEBUG(debug_warning: str, run_warning: str):
     if DEBUG_V: assert False, debug_warning
     else: print(run_warning)
+
+MAX_INT32   = (1 << 31) - 1
+MAX_UINT32  = (1 << 32) - 1
+MAX_INT64   = (1 << 63) - 1
+MAX_UINT64  = (1 << 64) - 1
+MAX_FLOAT32 = (2 - 2**(-23)) * (2 ** 127)
+MIN_FLOAT32 = 2 ** -126
+MAX_FLOAT64 = sys.float_info.max
+MIN_FLOAT64 = sys.float_info.min
 
 def get_maps(pid: str) -> list[tuple[int, int]]:
     addr_maps: list[tuple] = []
@@ -43,20 +53,28 @@ def find_text(addr_maps: list[tuple[int, int]], target_value: str) -> list[str]:
     b_value = bytes(target_value, "utf-8")
     return find_target(addr_maps, b_value)
 
+def find_int(addr_maps: list[tuple[int, int]], target_value: int) -> list[str]:
+    b_value = target_value.to_bytes(4, "little", signed=True)
+    return find_target(addr_maps, b_value)
+
 def find_uint(addr_maps: list[tuple[int, int]], target_value: int) -> list[str]:
     b_value = target_value.to_bytes(4, "little")
     return find_target(addr_maps, b_value)
     
-def find_int(addr_maps: list[tuple[int, int]], target_value: int) -> list[str]:
-    b_value = target_value.to_bytes(4, "little", signed=True)
+def find_int64(addr_maps: list[tuple[int, int]], target_value: int) -> list[str]:
+    b_value = target_value.to_bytes(8, "little", signed=True)
     return find_target(addr_maps, b_value)
 
 def find_uint64(addr_maps: list[tuple[int, int]], target_value: int) -> list[str]:
     b_value = target_value.to_bytes(8, "little")
     return find_target(addr_maps, b_value)
 
-def find_int64(addr_maps: list[tuple[int, int]], target_value: int) -> list[str]:
-    b_value = target_value.to_bytes(8, "little", signed=True)
+def find_float(addr_maps: list[tuple[int, int]], target_value: float) -> list[str]:
+    b_value = struct.pack("<f", target_value)
+    return find_target(addr_maps, b_value)
+
+def find_double(addr_maps: list[tuple[int, int]], target_value: float) -> list[str]:
+    b_value = struct.pack("<d", target_value)
     return find_target(addr_maps, b_value)
 
 def find_again(pid: str, addr_list: list[str], new_value: bytes, value_len: int):
@@ -93,20 +111,28 @@ def modify_text(target_list: list[str], mod_value: str):
     b_value = bytes(mod_value, "utf-8")
     return modify_target(target_list, b_value)
 
+def modify_int(target_list: list[str], mod_value: int):
+    b_value = mod_value.to_bytes(4, "little", signed=True)
+    return modify_target(target_list, b_value)
+
 def modify_uint(target_list: list[str], mod_value: int):
     b_value = mod_value.to_bytes(4, "little")
     return modify_target(target_list, b_value)
 
-def modify_int(target_list: list[str], mod_value: int):
-    b_value = mod_value.to_bytes(4, "little", signed=True)
+def modify_int64(target_list: list[str], mod_value: int):
+    b_value = mod_value.to_bytes(8, "little", signed=True)
     return modify_target(target_list, b_value)
 
 def modify_uint64(target_list: list[str], mod_value: int):
     b_value = mod_value.to_bytes(8, "little")
     return modify_target(target_list, b_value)
 
-def modify_int64(target_list: list[str], mod_value: int):
-    b_value = mod_value.to_bytes(8, "little", signed=True)
+def modify_float(target_list: list[str], mod_value: float):
+    b_value = struct.pack("<f", mod_value)
+    return modify_target(target_list, b_value)
+
+def modify_double(target_list: list[str], mod_value: float):
+    b_value = struct.pack("<d", mod_value)
     return modify_target(target_list, b_value)
 
 def read_line(pid, addr_maps):
@@ -129,17 +155,19 @@ def read_line(pid, addr_maps):
         elif command[0] == "help":
             print("help message:")
             print("- string: \tsearch string value in memory.")
-            print("- int: \t\tsearch signed 4 bytes number value in memory")
-            print("- uint: \tsearch unsigned 4 bytes number value in memory")
-            print("- int64: \tsearch signed 8 bytes number value in memory")
-            print("- uint64: \tsearch unsigned 8 bytes number value in memory")
+            print("- int: \t\tsearch signed 4 bytes int number value in memory.")
+            print("- uint: \tsearch unsigned 4 bytes int number value in memory.")
+            print("- int64: \tsearch signed 8 bytes int number value in memory.")
+            print("- uint64: \tsearch unsigned 8 bytes int number value in memory.")
+            print("- float: \tsearch 4 bytes float number value in memory.")
+            print("- double: \tsearch 8 bytes float number value in memory.")
             print("- set: \t\tmodify value(s) which was/were search command.")
             print("- list: \tlist the address(es) which was/were found in search command.")
             print("- help: \tprint this message.")
             
         elif command[0] == "string":
             if len(command) < 2:
-                print("`string` must accept 1 str argument.", file=sys.stderr)
+                print("`string` command must accept 1 str argument.", file=sys.stderr)
                 continue
             ori_value     = " ".join(command[1:])
             value_type    = "string"
@@ -147,60 +175,112 @@ def read_line(pid, addr_maps):
             addr_list     = find_text(addr_maps, ori_value)
             list_addr(addr_list)
             
-        elif command[0] == "uint":
-            if len(command) != 2:
-                print("`uint` must accept 1 num argument.", file=sys.stderr)
-                continue
-            try:
-                ori_value = int(command[1])
-            except ValueError:
-                print("`uint` accept a num value.", file=sys.stderr)
-                continue
-            value_type    = "uint"
-            ori_value_len = 4
-            addr_list     = find_uint(addr_maps, ori_value)
-            list_addr(addr_list)
-                
         elif command[0] == "int":
             if len(command) != 2:
-                print("`int` must accept 1 num argument.", file=sys.stderr)
+                print("`int` command must accept 1 num argument.", file=sys.stderr)
                 continue
             try:
                 ori_value = int(command[1])
             except ValueError:
-                print("`int` accept a num value.", file=sys.stderr)
+                print("`int` command must accept a num value.", file=sys.stderr)
+                continue
+            if ori_value > MAX_INT32 or ori_value < -MAX_INT32:
+                print("`int` command do not accept a num value more than 4 bytes, please use `int64`.", file=sys.stderr)
                 continue
             value_type    = "int"
             ori_value_len = 4
             addr_list     = find_int(addr_maps, ori_value)
             list_addr(addr_list)
 
-        elif command[0] == "uint64":
+        elif command[0] == "uint":
             if len(command) != 2:
-                print("`uint64` must accept 1 num argument.", file=sys.stderr)
+                print("`uint` command must accept 1 num argument.", file=sys.stderr)
                 continue
             try:
                 ori_value = int(command[1])
             except ValueError:
-                print("`uint64` accept a num value.", file=sys.stderr)
+                print("`uint` command must accept a num value.", file=sys.stderr)
+                continue
+            if ori_value > MAX_UINT32 or ori_value < 0:
+                print("`uint` command do not accept a num value more than 4 bytes, please use `uint64`. Or negative num value for int", file=sys.stderr)
+                continue
+            value_type    = "uint"
+            ori_value_len = 4
+            addr_list     = find_uint(addr_maps, ori_value)
+            list_addr(addr_list)
+                
+        elif command[0] == "int64":
+            if len(command) != 2:
+                print("`int64` command must accept 1 num argument.", file=sys.stderr)
+                continue
+            try:
+                ori_value = int(command[1])
+            except ValueError:
+                print("`int64` command must accept a num value.", file=sys.stderr)
+                continue
+            if ori_value > MAX_INT64 or ori_value < -MAX_INT64:
+                print("`int64` command do not accept a num value more than 8 bytes.", file=sys.stderr)
+                continue
+            value_type    = "int64"
+            ori_value_len = 8
+            addr_list     = find_int64(addr_maps, ori_value)
+            list_addr(addr_list)
+
+        elif command[0] == "uint64":
+            if len(command) != 2:
+                print("`uint64` command must accept 1 num argument.", file=sys.stderr)
+                continue
+            try:
+                ori_value = int(command[1])
+            except ValueError:
+                print("`uint64` command must accept a num value.", file=sys.stderr)
+                continue
+            if ori_value > MAX_UINT64 or ori_value < 0:
+                print("`uint64` command do not accept a num value more than 8 bytes or negative num value.", file=sys.stderr)
                 continue
             value_type    = "uint64"
             ori_value_len = 8
             addr_list     = find_uint64(addr_maps, ori_value)
             list_addr(addr_list)
 
-        elif command[0] == "int64":
+        elif command[0] == "float":
             if len(command) != 2:
-                print("`int64` must accept 1 num argument.", file=sys.stderr)
+                print("`float` command must accept 1 num argument.", file=sys.stderr)
                 continue
             try:
-                ori_value = int(command[1])
+                ori_value = float(command[1])
             except ValueError:
-                print("`int64` accept a num value.", file=sys.stderr)
+                print("`float` command must accept a num value.", file=sys.stderr)
                 continue
-            value_type    = "int64"
+            if (ori_value > MAX_FLOAT32
+                or ori_value < -MAX_FLOAT32
+                or -MIN_FLOAT32 < ori_value < 0
+                or 0 < ori_value < MIN_FLOAT32):
+                print("`float` command do not accept a num value more than 4 bytes.", file=sys.stderr)
+                continue
+            value_type    = "float"
+            ori_value_len = 4
+            addr_list     = find_float(addr_maps, ori_value)
+            list_addr(addr_list)
+
+        elif command[0] == "double":
+            if len(command) != 2:
+                print("`double` command must accept 1 num argument.", file=sys.stderr)
+                continue
+            try:
+                ori_value = float(command[1])
+            except ValueError:
+                print("`double` command must accept a num value.", file=sys.stderr)
+                continue
+            if (ori_value > MAX_FLOAT64
+                or ori_value < -MAX_FLOAT64
+                or -MIN_FLOAT64 < ori_value < 0
+                or 0 < ori_value < MIN_FLOAT64):
+                print("`double` command do not accept a num value more than 8 bytes.", file=sys.stderr)
+                continue
+            value_type    = "double"
             ori_value_len = 8
-            addr_list     = find_int64(addr_maps, ori_value)
+            addr_list     = find_double(addr_maps, ori_value)
             list_addr(addr_list)
 
         elif command[0] == "again":
@@ -213,30 +293,42 @@ def read_line(pid, addr_maps):
                     ori_value_len  = len(new_value)
                     addr_list  = find_again(pid, addr_list, new_value, ori_value_len)
                     ori_value  = new_value.decode("utf-8")
-                case "uint":
-                    if len(command) > 2: print("`uint` must accept 1 num argument or none.", file=sys.stderr)
-                    new_value  = int(command[1]).to_bytes(4, "little")
-                    value_type = "uint"
-                    addr_list  = find_again(pid, addr_list, new_value, ori_value_len)
-                    ori_value  = int.from_bytes(new_value, "little")
                 case "int":
-                    if len(command) > 2: print("`int` must accept 1 num argument or none.", file=sys.stderr)
+                    if len(command) > 2: print("`int` type must accept 1 num argument or none.", file=sys.stderr)
                     new_value  = int(command[1]).to_bytes(4, "little", signed=True)
                     value_type = "int"
                     addr_list  = find_again(pid, addr_list, new_value, ori_value_len)
                     ori_value  = int.from_bytes(new_value, "little", signed=True)
-                case "uint64":
-                    if len(command) > 2: print("`uint64` must accept 1 num argument or none.", file=sys.stderr)
-                    new_value  = int(command[1]).to_bytes(8, "little")
-                    value_type = "uint64"
+                case "uint":
+                    if len(command) > 2: print("`uint` type must accept 1 num argument or none.", file=sys.stderr)
+                    new_value  = int(command[1]).to_bytes(4, "little")
+                    value_type = "uint"
                     addr_list  = find_again(pid, addr_list, new_value, ori_value_len)
                     ori_value  = int.from_bytes(new_value, "little")
                 case "int64":
-                    if len(command) > 2: print("`int64` must accept 1 num argument or none.", file=sys.stderr)
+                    if len(command) > 2: print("`int64` type must accept 1 num argument or none.", file=sys.stderr)
                     new_value  = int(command[1]).to_bytes(8, "little", signed=True)
                     value_type = "int64"
                     addr_list  = find_again(pid, addr_list, new_value, ori_value_len)
                     ori_value  = int.from_bytes(new_value, "little", signed=True)
+                case "uint64":
+                    if len(command) > 2: print("`uint64` type must accept 1 num argument or none.", file=sys.stderr)
+                    new_value  = int(command[1]).to_bytes(8, "little")
+                    value_type = "uint64"
+                    addr_list  = find_again(pid, addr_list, new_value, ori_value_len)
+                    ori_value  = int.from_bytes(new_value, "little")
+                case "float":
+                    if len(command) > 2: print("`float` type must accept 1 num argument or none.", file=sys.stderr)
+                    new_value  = struct.pack("<f", float(command[1]))
+                    value_type = "float"
+                    addr_list  = find_again(pid, addr_list, new_value, ori_value_len)
+                    ori_value  = struct.unpack("<f", new_value)[0]
+                case "double":
+                    if len(command) > 2: print("`double` type must accept 1 num argument or none.", file=sys.stderr)
+                    new_value  = struct.pack("<d", float(command[1]))
+                    value_type = "double"
+                    addr_list  = find_again(pid, addr_list, new_value, ori_value_len)
+                    ori_value  = struct.unpack("<d", new_value)[0]
                 case _:
                     DEBUG(f"again {value_type} have not achieved.",
                           "Here should not be arrive.")
@@ -259,46 +351,72 @@ def read_line(pid, addr_maps):
                         print("Length of string value should not be longer than original.", file=sys.stderr)
                         continue
                     modify_text(addr_list, mod_value)
-                case "uint":
-                    try:
-                        mod_value = int(command[1])
-                    except ValueError:
-                        print("`uint` command accept a num value.", file=sys.stderr)
-                        continue
-                    if mod_value > (1 << 32 - 1):
-                        print("`uint` type do not accept a num value more than 4 bytes, please use `uint64`", file=sys.stderr)
-                        return
-                    modify_uint(addr_list, mod_value)
                 case "int":
                     try:
                         mod_value = int(command[1])
                     except ValueError:
-                        print("`int` command accept a num value.", file=sys.stderr)
+                        print("`int` type must accept a num value.", file=sys.stderr)
                         continue
-                    if mod_value > (1 << 31 - 1) or mod_value < -(1 << 31 - 1):
+                    if mod_value > MAX_INT32 or mod_value < -MAX_INT32:
                         print("`int` type do not accept a num value more than 4 bytes, please use `int64`.", file=sys.stderr)
                         continue
                     modify_int(addr_list, mod_value)
-                case "uint64":
+                case "uint":
                     try:
                         mod_value = int(command[1])
                     except ValueError:
-                        print("`uint64` command accept a num value.", file=sys.stderr)
+                        print("`uint` type must accept a num value.", file=sys.stderr)
                         continue
-                    if mod_value > (1 << 64 - 1):
-                        print("`uint64` type do not accept a num value more than 8 bytes.", file=sys.stderr)
+                    if mod_value > MAX_UINT32 or mod_value < 0:
+                        print("`uint` type do not accept a num value more than 4 bytes, please use `uint64`. Or negative num value for int", file=sys.stderr)
                         continue
-                    modify_uint64(addr_list, mod_value)
+                    modify_uint(addr_list, mod_value)
                 case "int64":
                     try:
                         mod_value = int(command[1])
                     except ValueError:
-                        print("`int64` command accept a num value.", file=sys.stderr)
+                        print("`int64` type must accept a num value.", file=sys.stderr)
                         continue
-                    if mod_value > (1 << 63 - 1) or mod_value < -(1 << 63 - 1):
+                    if mod_value > MAX_INT64 or mod_value < -MAX_INT64:
                         print("`int64` tyep do not accept a num value more than 8 bytes.", file=sys.stderr)
                         continue
                     modify_int64(addr_list, mod_value)
+                case "uint64":
+                    try:
+                        mod_value = int(command[1])
+                    except ValueError:
+                        print("`uint64` type must accept a num value.", file=sys.stderr)
+                        continue
+                    if mod_value > MAX_UINT64 or mod_value < 0:
+                        print("`uint64` type do not accept a num value more than 8 bytes or negative num value.", file=sys.stderr)
+                        continue
+                    modify_uint64(addr_list, mod_value)
+                case "float":
+                    try:
+                        mod_value = float(command[1])
+                    except ValueError:
+                        print("`float` type must accept a num value.", file=sys.stderr)
+                        continue
+                    if (mod_value > MAX_FLOAT32
+                        or mod_value < -MAX_FLOAT32
+                        or -MIN_FLOAT32 < mod_value < 0
+                        or 0 < mod_value < MIN_FLOAT32):
+                        print("`float` type do not accept a num value more than 4 bytes.", file=sys.stderr)
+                        continue
+                    modify_float(addr_list, mod_value)
+                case "double":
+                    try:
+                        mod_value = float(command[1])
+                    except ValueError:
+                        print("`double` type must accept a num value.", file=sys.stderr)
+                        continue
+                    if (mod_value > MAX_FLOAT64
+                        or mod_value < -MAX_FLOAT64
+                        or -MIN_FLOAT64 < mod_value < 0
+                        or 0 < mod_value < MIN_FLOAT64):
+                        print("`double` type do not accept a num value more than 8 bytes.", file=sys.stderr)
+                        continue
+                    modify_double(addr_list, mod_value)
                 case _:
                     DEBUG(f"set {value_type} have not achieved.",
                           "Here should not be arrived.")
