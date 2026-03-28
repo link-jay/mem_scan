@@ -1,5 +1,5 @@
 venv/
 .mypy_cache/
 test/*.out
-test/test_script.sh
+test/test_script*
 TAGS

@@ -20,7 +20,7 @@ def get_maps(pid: str) -> list[tuple[int, int]]:
     return addr_maps
             
 def find_target(addr_maps: list[tuple[int, int]], target_value: bytes) -> list[str]:
-    target_list: list[str] = []
+    addr_list: list[str] = []
     with open("/proc/"+pid+"/mem", "rb") as mem:
         for addr_map in addr_maps:
             offset     = 0
@@ -35,9 +35,9 @@ def find_target(addr_maps: list[tuple[int, int]], target_value: bytes) -> list[s
             while True:
                 off: int = buf.find(target_value, offset)
                 if off == -1: break
-                target_list.append(hex(start + off))
+                addr_list.append(hex(start + off))
                 offset = off + 1
-    return target_list
+    return addr_list
 
 def find_text(addr_maps: list[tuple[int, int]], target_value: str) -> list[str]:
     b_value = bytes(target_value, "utf-8")
@@ -60,17 +60,17 @@ def find_int64(addr_maps: list[tuple[int, int]], target_value: int) -> list[str]
     return find_target(addr_maps, b_value)
 
 def find_again(pid: str, addr_list: list[str], new_value: bytes, value_len: int):
-    new_list = []
+    new_addr_list = []
     with open("/proc/"+pid+"/mem", "rb") as mem:
         for addr in addr_list:
             try:
                 mem.seek(int(addr, 16))
                 if mem.read(value_len) == new_value:
-                    new_list.append(addr)
+                    new_addr_list.append(addr)
             except OSError:
                 continue
                     
-    return new_list
+    return new_addr_list
 
 def list_addr(addr_list: list[str]):
     if addr_list:
@@ -263,40 +263,40 @@ def read_line(pid, addr_maps):
                     try:
                         mod_value = int(command[1])
                     except ValueError:
-                        print("`uint` accept a num value.", file=sys.stderr)
+                        print("`uint` command accept a num value.", file=sys.stderr)
                         continue
                     if mod_value > (1 << 32 - 1):
-                        print("`uint` do not accept a num value more than 4 bytes, please use `uint64`", file=sys.stderr)
+                        print("`uint` type do not accept a num value more than 4 bytes, please use `uint64`", file=sys.stderr)
                         return
                     modify_uint(addr_list, mod_value)
                 case "int":
                     try:
                         mod_value = int(command[1])
                     except ValueError:
-                        print("`int` accept a num value.", file=sys.stderr)
+                        print("`int` command accept a num value.", file=sys.stderr)
                         continue
                     if mod_value > (1 << 31 - 1) or mod_value < -(1 << 31 - 1):
-                        print("`int` do not accept a num value more than 4 bytes, please use `int64`.", file=sys.stderr)
+                        print("`int` type do not accept a num value more than 4 bytes, please use `int64`.", file=sys.stderr)
                         continue
                     modify_int(addr_list, mod_value)
                 case "uint64":
                     try:
                         mod_value = int(command[1])
                     except ValueError:
-                        print("`uint64` accept a num value.", file=sys.stderr)
+                        print("`uint64` command accept a num value.", file=sys.stderr)
                         continue
                     if mod_value > (1 << 64 - 1):
-                        print("`uint64` do not accept a num value more than 8 bytes.", file=sys.stderr)
+                        print("`uint64` type do not accept a num value more than 8 bytes.", file=sys.stderr)
                         continue
                     modify_uint64(addr_list, mod_value)
                 case "int64":
                     try:
                         mod_value = int(command[1])
                     except ValueError:
-                        print("`int64` accept a num value.", file=sys.stderr)
+                        print("`int64` command accept a num value.", file=sys.stderr)
                         continue
                     if mod_value > (1 << 63 - 1) or mod_value < -(1 << 63 - 1):
-                        print("`int64` do not accept a num value more than 8 bytes.", file=sys.stderr)
+                        print("`int64` tyep do not accept a num value more than 8 bytes.", file=sys.stderr)
                         continue
                     modify_int64(addr_list, mod_value)
                 case _:
@@ -307,7 +307,7 @@ def read_line(pid, addr_maps):
                   "UnkownCommand. Please input `string/int` to find data or `set` to modify value.")
 
 if __name__ == "__main__":
-    assert len(sys.argv) == 2, "Script accepts two args, script_name and pid."
+    assert len(sys.argv) == 2, "Script need a pid as argv."
     pid       = sys.argv[1]
     addr_maps = get_maps(pid)
     for addr_map in addr_maps:
