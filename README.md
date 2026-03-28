@@ -9,8 +9,8 @@ A simple memory scan program in python.
 * [x] modify int32
 * [x] find int64
 * [x] modify int64
-* [ ] find float32
-* [ ] modify float32
+* [x] find float32
+* [x] modify float32
 * [x] find float64
 * [x] modify float64
 * [x] search many times
@@ -23,6 +23,7 @@ A simple memory scan program in python.
 `uint num`: Search unsigned `num32` value in memory.  
 `int64 num`: Search signed `num64` value in memory.  
 `uint64 num`: Search unsigned `num64` value in memory.  
+`float num`: Search `float32` value in memory.  
 `double num`: Search `float64` value in memory.  
 `again [str|num]`: Search a value again by last type of search.It can accept 0 args to search original value.  
 `list`: List the addresses found in search command.  
