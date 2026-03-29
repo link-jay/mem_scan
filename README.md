@@ -1,7 +1,9 @@
 # mem_scan
-A simple memory scan program in python.
+A simple memory scan program in python.  
+Built on the Linux virtual memory system, the program implements its core functions by parsing `/proc/[pid]/maps` and `/proc/[pid]/mem`. It currently only supports data widths compatible with C programs.  
+It supports search command like `int`/`string` to locate addresses. The non-search command rely on the preceding search command to determine data type, which is recorded during the first search. Specially, the search command - `again` also depends on preceding explicit search command.
 
-## Target
+## Feature
 
 * [x] find text
 * [x] modify text
@@ -14,6 +16,11 @@ A simple memory scan program in python.
 * [x] find float64
 * [x] modify float64
 * [x] search many times
+* [ ] delete addr
+* [ ] check value
+* [ ] modify value continuously
+* [ ] monitor value continueously
+* [ ] support shell command
 
 ## Command
 
