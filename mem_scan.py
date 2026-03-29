@@ -207,7 +207,7 @@ def parse_command(pid, addr_maps):
             print("- again: \tSearch value again. It accepts 0 arg for search original value or 1 arg for search a new value with same type.")
             print("- set: \t\tModify value(s) which was/were search command.")
             print("- list: \tList the address(es) which was/were found in search command.")
-            print("- watch: \tCheck the values in the addresses list. It accepts 0 arg to check all value or 1 arg to check a specified value.")
+            print("- watch: \tView values in the addresses list. Accepts no arguments to view all list values, or a number to view a specific value. You can monitor values in real time by appending a `[/[time]]` parameter (default: 2 seconds).")
             print("- help: \tPrint this message.")
             
         elif command[0] == "again":
