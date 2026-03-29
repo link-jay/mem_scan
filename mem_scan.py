@@ -504,77 +504,62 @@ def parse_command(pid, addr_maps):
             elif len(command) > 2:
                 print("`watch` get too much args. Please checkout.")
                 continue
+            def __refresher(func):
+                def wrapper():
+                    while True:
+                        try:
+                            func()
+                            if not refresh: break
+                            time.sleep(refresh_time)
+                        except KeyboardInterrupt:
+                            print()
+                            break
+                return wrapper
+            # __string_refresher = __refresher(__string_refresher) -> wrapper
+            # __string_refresher() -> wrapper() ->...func()...
             match value_type:
                 case "string":
-                    while True:
-                        try:
-                            for addr in temp_addr_list:
-                                print(f"[{addr[0]}] {addr[1]}: {watch_str(addr[1], ori_value_width)}")
-                            if not refresh: break
-                            time.sleep(refresh_time)
-                        except KeyboardInterrupt:
-                            print()
-                            break
+                    @__refresher
+                    def __string_refresher():
+                        for addr in temp_addr_list:
+                            print(f"[{addr[0]}] {addr[1]}: {watch_str(addr[1], ori_value_width)}")
+                    __string_refresher()
                 case "int":
-                    while True:
-                        try:
-                            for addr in temp_addr_list:
-                                print(f"[{addr[0]}] {addr[1]}: {watch_int(addr[1])}")
-                            if not refresh: break
-                            time.sleep(refresh_time)
-                        except KeyboardInterrupt:
-                            print()
-                            break
+                    @__refresher
+                    def __int_refresher():
+                        for addr in temp_addr_list:
+                            print(f"[{addr[0]}] {addr[1]}: {watch_int(addr[1])}")
+                    __int_refresher()
                 case "uint":
-                    while True:
-                        try:
-                            for addr in temp_addr_list:
-                                print(f"[{addr[0]}] {addr[1]}: {watch_uint(addr[1])}")
-                            if not refresh: break
-                            time.sleep(refresh_time)
-                        except KeyboardInterrupt:
-                            print()
-                            break
+                    @__refresher
+                    def __uint_refresher():
+                        for addr in temp_addr_list:
+                            print(f"[{addr[0]}] {addr[1]}: {watch_uint(addr[1])}")
+                    __uint_refresher()
                 case "int64":
-                    while True:
-                        try:
-                            for addr in temp_addr_list:
-                                print(f"[{addr[0]}] {addr[1]}: {watch_int64(addr[1])}")
-                            if not refresh: break
-                            time.sleep(refresh_time)
-                        except KeyboardInterrupt:
-                            print()
-                            break
+                    @__refresher
+                    def __int64_refresher():
+                        for addr in temp_addr_list:
+                            print(f"[{addr[0]}] {addr[1]}: {watch_int64(addr[1])}")
+                    __int64_refresher()
                 case "uint64":
-                    while True:
-                        try:
-                            for addr in temp_addr_list:
-                                print(f"[{addr[0]}] {addr[1]}: {watch_uint64(addr[1])}")
-                            if not refresh: break
-                            time.sleep(refresh_time)
-                        except KeyboardInterrupt:
-                            print()
-                            break
+                    @__refresher
+                    def __uint64_refresher():
+                        for addr in temp_addr_list:
+                            print(f"[{addr[0]}] {addr[1]}: {watch_uint64(addr[1])}")
+                    __uint64_refresher()
                 case "float":
-                    while True:
-                        try:
-                            for addr in temp_addr_list:
-                                print(f"[{addr[0]}] {addr[1]}: {watch_float(addr[1])}")
-                            if not refresh: break
-                            time.sleep(refresh_time)
-                        except KeyboardInterrupt:
-                            print()
-                            break
+                    @__refresher
+                    def __float_refresher():
+                        for addr in temp_addr_list:
+                            print(f"[{addr[0]}] {addr[1]}: {watch_float(addr[1])}")
+                    __float_refresher()
                 case "double":
-                    while True:
-                        try:
-                            for addr in temp_addr_list:
-                                print(f"[{addr[0]}] {addr[1]}: {watch_double(addr[1])}")
-                            if not refresh: break
-                            time.sleep(refresh_time)
-                        except KeyboardInterrupt:
-                            print()
-                            break
+                    @__refresher
+                    def __double_refresher():
+                        for addr in temp_addr_list:
+                            print(f"[{addr[0]}] {addr[1]}: {watch_double(addr[1])}")
+                    __double_refresher()
                 case _:
                     DEBUG(f"`{value_type}` have not achieved.",
                               "Here should not be arrived.")
