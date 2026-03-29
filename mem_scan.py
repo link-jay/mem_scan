@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 # TODO: 合并int类，float类操作
+# TODO: 调整排版
 import sys
+import time
 import readline
 import struct
 
@@ -172,6 +174,7 @@ def modify_double(target_list: list[str], mod_value: float):
     b_value = struct.pack("<d", mod_value)
     return modify_target(target_list, b_value)
 
+# TODO: 手动清理一些临时变量
 def parse_command(pid, addr_maps):
     ori_value  = None
     addr_list  = []
@@ -463,46 +466,118 @@ def parse_command(pid, addr_maps):
         elif command[0] == "watch":
             if not addr_list:
                 print("Please use search command to search value first.", file=sys.stderr)
-            if len(command) == 1:
-                temp_addr_list = enumerate(addr_list)
-            elif len(command) == 2:
-                try:
-                    number = int(command[1])
-                except ValueError:
-                    DEBUG(f"`{command[1]}` have not achieved.",
-                          "`watch` must accept a num in the list.")
-                if number > len(addr_list) - 1 or number < 0:
-                    print(f"{number} is out of addr_list, use `list` to checkout.")
+                continue
+            temp_addr_list = list(enumerate(addr_list))
+            refresh = False
+            refresh_time = 2
+            if len(command) == 2:
+                watch_arg_value = command[1].split("/")
+                # watch 1 || watch 1/ || watch /78 || watch /
+                def __get_single_addr():
+                    try:
+                        number = int(watch_arg_value[0])
+                    except ValueError:
+                        print("`watch` must accept a num in the list.", file=sys.stderr)
+                        return
+                    if number > len(addr_list) - 1 or number < 0:
+                        print(f"{number} is out of addr_list, use `list` to checkout.")
+                        return
+                    return [(number, addr_list[number]),]
+                if len(watch_arg_value) == 1:
+                    if not (temp_addr_list := __get_single_addr()): continue
+                elif len(watch_arg_value) == 2:
+                    refresh = True
+                    if watch_arg_value[0]:
+                        if not (temp_addr_list := __get_single_addr()): continue
+                    if watch_arg_value[1]:
+                        try:
+                            refresh_time = int(watch_arg_value[1])
+                        except ValueError:
+                            print("refresh time of `watch` must accept a num value.", file=sys.stderr)
+                            continue
+                        if refresh_time < 0:
+                            print(f"refresh time of `watch` should not be negative.")
+                            continue
+                else:
                     continue
-                temp_addr_list = [(number, addr_list[number]),]
-            else:
-                print("Too much args here, please checkout the argv.", file=sys.stderr)
+                    print("`watch` get too much args. Please checkout.")
+            elif len(command) > 2:
+                print("`watch` get too much args. Please checkout.")
+                continue
             match value_type:
                 case "string":
-                    for addr in temp_addr_list:
-                        print(f"[{addr[0]}] {addr[1]}: {watch_str(addr[1], ori_value_width)}")
+                    while True:
+                        try:
+                            for addr in temp_addr_list:
+                                print(f"[{addr[0]}] {addr[1]}: {watch_str(addr[1], ori_value_width)}")
+                            if not refresh: break
+                            time.sleep(refresh_time)
+                        except KeyboardInterrupt:
+                            print()
+                            break
                 case "int":
-                    for addr in temp_addr_list:
-                        print(f"[{addr[0]}] {addr[1]}: {watch_int(addr[1])}")
+                    while True:
+                        try:
+                            for addr in temp_addr_list:
+                                print(f"[{addr[0]}] {addr[1]}: {watch_int(addr[1])}")
+                            if not refresh: break
+                            time.sleep(refresh_time)
+                        except KeyboardInterrupt:
+                            print()
+                            break
                 case "uint":
-                    for addr in temp_addr_list:
-                        print(f"[{addr[0]}] {addr[1]}: {watch_uint(addr[1])}")
+                    while True:
+                        try:
+                            for addr in temp_addr_list:
+                                print(f"[{addr[0]}] {addr[1]}: {watch_uint(addr[1])}")
+                            if not refresh: break
+                            time.sleep(refresh_time)
+                        except KeyboardInterrupt:
+                            print()
+                            break
                 case "int64":
-                    for addr in temp_addr_list:
-                        print(f"[{addr[0]}] {addr[1]}: {watch_int64(addr[1])}")
+                    while True:
+                        try:
+                            for addr in temp_addr_list:
+                                print(f"[{addr[0]}] {addr[1]}: {watch_int64(addr[1])}")
+                            if not refresh: break
+                            time.sleep(refresh_time)
+                        except KeyboardInterrupt:
+                            print()
+                            break
                 case "uint64":
-                    for addr in temp_addr_list:
-                        print(f"[{addr[0]}] {addr[1]}: {watch_uint64(addr[1])}")
+                    while True:
+                        try:
+                            for addr in temp_addr_list:
+                                print(f"[{addr[0]}] {addr[1]}: {watch_uint64(addr[1])}")
+                            if not refresh: break
+                            time.sleep(refresh_time)
+                        except KeyboardInterrupt:
+                            print()
+                            break
                 case "float":
-                    for addr in temp_addr_list:
-                        print(f"[{addr[0]}] {addr[1]}: {watch_float(addr[1])}")
+                    while True:
+                        try:
+                            for addr in temp_addr_list:
+                                print(f"[{addr[0]}] {addr[1]}: {watch_float(addr[1])}")
+                            if not refresh: break
+                            time.sleep(refresh_time)
+                        except KeyboardInterrupt:
+                            print()
+                            break
                 case "double":
-                    for addr in temp_addr_list:
-                        print(f"[{addr[0]}] {addr[1]}: {watch_double(addr[1])}")
+                    while True:
+                        try:
+                            for addr in temp_addr_list:
+                                print(f"[{addr[0]}] {addr[1]}: {watch_double(addr[1])}")
+                            if not refresh: break
+                            time.sleep(refresh_time)
+                        except KeyboardInterrupt:
+                            print()
+                            break
                 case _:
                     DEBUG(f"`{value_type}` have not achieved.",
-                          "Here should not be arrived.")
-            del temp_addr_list
+                              "Here should not be arrived.")
                 
         else:
             DEBUG(f"`{command[0]}` have not achieved.",
