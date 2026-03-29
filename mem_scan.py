@@ -193,17 +193,19 @@ def parse_command(pid, addr_maps):
             list_addr(addr_list)
 
         elif command[0] == "help":
-            print("help message:")
-            print("- string: \tsearch string value in memory.")
-            print("- int: \t\tsearch signed 4 bytes int number value in memory.")
-            print("- uint: \tsearch unsigned 4 bytes int number value in memory.")
-            print("- int64: \tsearch signed 8 bytes int number value in memory.")
-            print("- uint64: \tsearch unsigned 8 bytes int number value in memory.")
-            print("- float: \tsearch 4 bytes float number value in memory.")
-            print("- double: \tsearch 8 bytes float number value in memory.")
-            print("- set: \t\tmodify value(s) which was/were search command.")
-            print("- list: \tlist the address(es) which was/were found in search command.")
-            print("- help: \tprint this message.")
+            print("HELP MESSAGE:")
+            print("- string: \tSearch string value in memory.")
+            print("- int: \t\tSearch signed 4 bytes int number value in memory.")
+            print("- uint: \tSearch unsigned 4 bytes int number value in memory.")
+            print("- int64: \tSearch signed 8 bytes int number value in memory.")
+            print("- uint64: \tSearch unsigned 8 bytes int number value in memory.")
+            print("- float: \tSearch 4 bytes float number value in memory.")
+            print("- double: \tSearch 8 bytes float number value in memory.")
+            print("- again: \tSearch value again. It accepts 0 arg for search original value or 1 arg for search a new value with same type.")
+            print("- set: \t\tModify value(s) which was/were search command.")
+            print("- list: \tList the address(es) which was/were found in search command.")
+            print("- watch: \tCheck the values in the addresses list. It accepts 0 arg to check all value or 1 arg to check a specified value.")
+            print("- help: \tPrint this message.")
             
         elif command[0] == "again":
             if len(command) == 1:
@@ -487,6 +489,37 @@ def parse_command(pid, addr_maps):
                     case _:
                         DEBUG(f"`{value_type}` have not achieved.",
                               "Here should not be arrived.")
+            elif len(command) == 2:
+                try:
+                    number = int(command[1])
+                except ValueError:
+                    DEBUG(f"`{command[1]}` have not achieved.",
+                          "`watch` must accept a num in the list.")
+                if number > len(addr_list) - 1 or number < 0:
+                    print(f"{number} is out of addr_list, use `list` to checkout.")
+                    continue
+                addr = addr_list[number]
+                match value_type:
+                    case "string":
+                        print(f"[{number}] {addr}: {watch_str(addr, ori_value_width)}")
+                    case "int":
+                        print(f"[{number}] {addr}: {watch_int(addr)}")
+                    case "uint":
+                        print(f"[{number}] {addr}: {watch_uint(addr)}")
+                    case "int64":
+                        print(f"[{number}] {addr}: {watch_int64(addr)}")
+                    case "uint64":
+                        print(f"[{number}] {addr}: {watch_uint64(addr)}")
+                    case "float":
+                        print(f"[{number}] {addr}: {watch_float(addr)}")
+                    case "double":
+                        print(f"[{number}] {addr}: {watch_double(addr)}")
+                    case _:
+                        DEBUG(f"`{value_type}` have not achieved.",
+                              "Here should not be arrived.")
+            else:
+                print("Too much args here, please checkout the argv.", file=sys.stderr)
+                
         else:
             DEBUG(f"`{command[0]}` have not achieved.",
                   "UnkownCommand. Please input `string/int` to find data or `set` to modify value.")
