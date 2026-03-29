@@ -17,7 +17,7 @@ It supports search command like `int`/`string` to locate addresses. The non-sear
 * [x] modify float64
 * [x] search many times
 * [ ] delete addr
-* [ ] check value
+* [x] check value
 * [ ] modify value continuously
 * [ ] monitor value continueously
 * [ ] support shell command
@@ -32,8 +32,9 @@ It supports search command like `int`/`string` to locate addresses. The non-sear
 `uint64 num`: Search unsigned `num64` value in memory.  
 `float num`: Search `float32` value in memory.  
 `double num`: Search `float64` value in memory.  
-`again [str|num]`: Search a value again by last type of search.It can accept 0 args to search original value.  
+`again [str|num]`: Search a value again by last type of search.It accepts 0 arg to search original value or a new value in same type to search again.  
 `list`: List the addresses found in search command.  
+`watch [number]`: Check the value in the addresses list. It accepts 0 arg to check all value in the list or a number to check specified value.  
 `set value`: modify the values in the `list`.  
 
 ## Example
