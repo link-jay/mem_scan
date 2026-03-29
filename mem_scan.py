@@ -464,31 +464,7 @@ def parse_command(pid, addr_maps):
             if not addr_list:
                 print("Please use search command to search value first.", file=sys.stderr)
             if len(command) == 1:
-                match value_type:
-                    case "string":
-                        for addr in enumerate(addr_list):
-                            print(f"[{addr[0]}] {addr[1]}: {watch_str(addr[1], ori_value_width)}")
-                    case "int":
-                        for addr in enumerate(addr_list):
-                            print(f"[{addr[0]}] {addr[1]}: {watch_int(addr[1])}")
-                    case "uint":
-                        for addr in enumerate(addr_list):
-                            print(f"[{addr[0]}] {addr[1]}: {watch_uint(addr[1])}")
-                    case "int64":
-                        for addr in enumerate(addr_list):
-                            print(f"[{addr[0]}] {addr[1]}: {watch_int64(addr[1])}")
-                    case "uint64":
-                        for addr in enumerate(addr_list):
-                            print(f"[{addr[0]}] {addr[1]}: {watch_uint64(addr[1])}")
-                    case "float":
-                        for addr in enumerate(addr_list):
-                            print(f"[{addr[0]}] {addr[1]}: {watch_float(addr[1])}")
-                    case "double":
-                        for addr in enumerate(addr_list):
-                            print(f"[{addr[0]}] {addr[1]}: {watch_double(addr[1])}")
-                    case _:
-                        DEBUG(f"`{value_type}` have not achieved.",
-                              "Here should not be arrived.")
+                temp_addr_list = enumerate(addr_list)
             elif len(command) == 2:
                 try:
                     number = int(command[1])
@@ -498,27 +474,35 @@ def parse_command(pid, addr_maps):
                 if number > len(addr_list) - 1 or number < 0:
                     print(f"{number} is out of addr_list, use `list` to checkout.")
                     continue
-                addr = addr_list[number]
-                match value_type:
-                    case "string":
-                        print(f"[{number}] {addr}: {watch_str(addr, ori_value_width)}")
-                    case "int":
-                        print(f"[{number}] {addr}: {watch_int(addr)}")
-                    case "uint":
-                        print(f"[{number}] {addr}: {watch_uint(addr)}")
-                    case "int64":
-                        print(f"[{number}] {addr}: {watch_int64(addr)}")
-                    case "uint64":
-                        print(f"[{number}] {addr}: {watch_uint64(addr)}")
-                    case "float":
-                        print(f"[{number}] {addr}: {watch_float(addr)}")
-                    case "double":
-                        print(f"[{number}] {addr}: {watch_double(addr)}")
-                    case _:
-                        DEBUG(f"`{value_type}` have not achieved.",
-                              "Here should not be arrived.")
+                temp_addr_list = [(number, addr_list[number]),]
             else:
                 print("Too much args here, please checkout the argv.", file=sys.stderr)
+            match value_type:
+                case "string":
+                    for addr in temp_addr_list:
+                        print(f"[{addr[0]}] {addr[1]}: {watch_str(addr[1], ori_value_width)}")
+                case "int":
+                    for addr in temp_addr_list:
+                        print(f"[{addr[0]}] {addr[1]}: {watch_int(addr[1])}")
+                case "uint":
+                    for addr in temp_addr_list:
+                        print(f"[{addr[0]}] {addr[1]}: {watch_uint(addr[1])}")
+                case "int64":
+                    for addr in temp_addr_list:
+                        print(f"[{addr[0]}] {addr[1]}: {watch_int64(addr[1])}")
+                case "uint64":
+                    for addr in temp_addr_list:
+                        print(f"[{addr[0]}] {addr[1]}: {watch_uint64(addr[1])}")
+                case "float":
+                    for addr in temp_addr_list:
+                        print(f"[{addr[0]}] {addr[1]}: {watch_float(addr[1])}")
+                case "double":
+                    for addr in temp_addr_list:
+                        print(f"[{addr[0]}] {addr[1]}: {watch_double(addr[1])}")
+                case _:
+                    DEBUG(f"`{value_type}` have not achieved.",
+                          "Here should not be arrived.")
+            del temp_addr_list
                 
         else:
             DEBUG(f"`{command[0]}` have not achieved.",
