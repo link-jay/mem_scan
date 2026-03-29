@@ -5,7 +5,7 @@ import sys
 import readline
 import struct
 
-DEBUG_V = False
+DEBUG_V = True
 def DEBUG(debug_warning: str, run_warning: str):
     if DEBUG_V: assert False, debug_warning
     else: print(run_warning)
@@ -50,7 +50,7 @@ def find_target(addr_maps: list[tuple[int, int]], target_value: bytes) -> list[s
                 offset = off + 1
     return addr_list
 
-def find_text(addr_maps: list[tuple[int, int]], target_value: str) -> list[str]:
+def find_str(addr_maps: list[tuple[int, int]], target_value: str) -> list[str]:
     b_value = bytes(target_value, "utf-8")
     return find_target(addr_maps, b_value)
 
@@ -78,18 +78,54 @@ def find_double(addr_maps: list[tuple[int, int]], target_value: float) -> list[s
     b_value = struct.pack("<d", target_value)
     return find_target(addr_maps, b_value)
 
-def find_again(pid: str, addr_list: list[str], new_value: bytes, value_len: int):
+def find_again(pid: str, addr_list: list[str], new_value: bytes, value_width: int) -> list[str]:
     new_addr_list = []
     with open("/proc/"+pid+"/mem", "rb") as mem:
         for addr in addr_list:
             try:
                 mem.seek(int(addr, 16))
-                if mem.read(value_len) == new_value:
+                if mem.read(value_width) == new_value:
                     new_addr_list.append(addr)
             except OSError:
                 continue
                     
     return new_addr_list
+
+def watch_value(addr: str, value_width: int) -> bytes:
+    with open("/proc/"+pid+"/mem", "rb") as mem:
+            try:
+                mem.seek(int(addr, 16))
+                return mem.read(value_width)
+            except OSError:
+                assert False, "Don't know how to deal yet."
+
+def watch_str(addr: str, value_width: int) -> str:
+    b_value = watch_value(addr, value_width)
+    return b_value.decode("utf-8")
+
+def watch_int(addr: str) -> int:
+    b_value = watch_value(addr, 4)
+    return int.from_bytes(b_value, "little", signed=True)
+
+def watch_uint(addr: str) -> int:
+    b_value = watch_value(addr, 4)
+    return int.from_bytes(b_value, "little")
+
+def watch_int64(addr: str) -> int:
+    b_value = watch_value(addr, 8)
+    return int.from_bytes(b_value, "little", signed=True)
+
+def watch_uint64(addr: str) -> int:
+    b_value = watch_value(addr, 8)
+    return int.from_bytes(b_value, "little")
+
+def watch_float(addr: str) -> float:
+    b_value = watch_value(addr, 4)
+    return struct.unpack("<f", b_value)[0]
+
+def watch_double(addr: str) -> float:
+    b_value = watch_value(addr, 8)
+    return struct.unpack("<d", b_value)[0]
 
 def list_addr(addr_list: list[str]):
     if addr_list:
@@ -108,7 +144,7 @@ def modify_target(target_list: list[str], new_value: bytes):
                 continue
     return
             
-def modify_text(target_list: list[str], mod_value: str):
+def modify_str(target_list: list[str], mod_value: str):
     b_value = bytes(mod_value, "utf-8")
     return modify_target(target_list, b_value)
 
@@ -136,11 +172,11 @@ def modify_double(target_list: list[str], mod_value: float):
     b_value = struct.pack("<d", mod_value)
     return modify_target(target_list, b_value)
 
-def read_line(pid, addr_maps):
+def parse_command(pid, addr_maps):
     ori_value  = None
     addr_list  = []
     value_type = "string"
-    ori_value_len  = 0
+    ori_value_width  = 0
     
     while True:
         try:
@@ -176,47 +212,47 @@ def read_line(pid, addr_maps):
                 case "string":
                     new_value  = bytes(" ".join(command[1:]), "utf-8")
                     value_tyep = "string"
-                    ori_value_len  = len(new_value)
-                    addr_list  = find_again(pid, addr_list, new_value, ori_value_len)
+                    ori_value_width  = len(new_value)
+                    addr_list  = find_again(pid, addr_list, new_value, ori_value_width)
                     ori_value  = new_value.decode("utf-8")
                 case "int":
                     if len(command) > 2: print("`int` type must accept 1 num argument or none.", file=sys.stderr)
                     new_value  = int(command[1]).to_bytes(4, "little", signed=True)
                     value_type = "int"
-                    addr_list  = find_again(pid, addr_list, new_value, ori_value_len)
+                    addr_list  = find_again(pid, addr_list, new_value, ori_value_width)
                     ori_value  = int.from_bytes(new_value, "little", signed=True)
                 case "uint":
                     if len(command) > 2: print("`uint` type must accept 1 num argument or none.", file=sys.stderr)
                     new_value  = int(command[1]).to_bytes(4, "little")
                     value_type = "uint"
-                    addr_list  = find_again(pid, addr_list, new_value, ori_value_len)
+                    addr_list  = find_again(pid, addr_list, new_value, ori_value_width)
                     ori_value  = int.from_bytes(new_value, "little")
                 case "int64":
                     if len(command) > 2: print("`int64` type must accept 1 num argument or none.", file=sys.stderr)
                     new_value  = int(command[1]).to_bytes(8, "little", signed=True)
                     value_type = "int64"
-                    addr_list  = find_again(pid, addr_list, new_value, ori_value_len)
+                    addr_list  = find_again(pid, addr_list, new_value, ori_value_width)
                     ori_value  = int.from_bytes(new_value, "little", signed=True)
                 case "uint64":
                     if len(command) > 2: print("`uint64` type must accept 1 num argument or none.", file=sys.stderr)
                     new_value  = int(command[1]).to_bytes(8, "little")
                     value_type = "uint64"
-                    addr_list  = find_again(pid, addr_list, new_value, ori_value_len)
+                    addr_list  = find_again(pid, addr_list, new_value, ori_value_width)
                     ori_value  = int.from_bytes(new_value, "little")
                 case "float":
                     if len(command) > 2: print("`float` type must accept 1 num argument or none.", file=sys.stderr)
                     new_value  = struct.pack("<f", float(command[1]))
                     value_type = "float"
-                    addr_list  = find_again(pid, addr_list, new_value, ori_value_len)
+                    addr_list  = find_again(pid, addr_list, new_value, ori_value_width)
                     ori_value  = struct.unpack("<f", new_value)[0]
                 case "double":
                     if len(command) > 2: print("`double` type must accept 1 num argument or none.", file=sys.stderr)
                     new_value  = struct.pack("<d", float(command[1]))
                     value_type = "double"
-                    addr_list  = find_again(pid, addr_list, new_value, ori_value_len)
+                    addr_list  = find_again(pid, addr_list, new_value, ori_value_width)
                     ori_value  = struct.unpack("<d", new_value)[0]
                 case _:
-                    DEBUG(f"again {value_type} have not achieved.",
+                    DEBUG(f"again `{value_type}` have not achieved.",
                           "Here should not be arrive.")
             list_addr(addr_list)
                 
@@ -230,10 +266,10 @@ def read_line(pid, addr_maps):
             match value_type:
                 case "string":
                     mod_value = " ".join(command[1:])
-                    if len(bytes(mod_value, "utf-8")) > ori_value_len:
+                    if len(bytes(mod_value, "utf-8")) > ori_value_width:
                         print("Length of string value should not be longer than original.", file=sys.stderr)
                         continue
-                    modify_text(addr_list, mod_value)
+                    modify_str(addr_list, mod_value)
                 case "int":
                     try:
                         mod_value = int(command[1])
@@ -301,7 +337,7 @@ def read_line(pid, addr_maps):
                         continue
                     modify_double(addr_list, mod_value)
                 case _:
-                    DEBUG(f"set {value_type} have not achieved.",
+                    DEBUG(f"set `{value_type}` have not achieved.",
                           "Here should not be arrived.")
 
         elif command[0] == "string":
@@ -310,8 +346,8 @@ def read_line(pid, addr_maps):
                 continue
             ori_value     = " ".join(command[1:])
             value_type    = "string"
-            ori_value_len = len(bytes(ori_value, "utf-8"))
-            addr_list     = find_text(addr_maps, ori_value)
+            ori_value_width = len(bytes(ori_value, "utf-8"))
+            addr_list     = find_str(addr_maps, ori_value)
             list_addr(addr_list)
             
         elif command[0] == "int":
@@ -327,7 +363,7 @@ def read_line(pid, addr_maps):
                 print("`int` command do not accept a num value more than 4 bytes, please use `int64`.", file=sys.stderr)
                 continue
             value_type    = "int"
-            ori_value_len = 4
+            ori_value_width = 4
             addr_list     = find_int(addr_maps, ori_value)
             list_addr(addr_list)
 
@@ -344,7 +380,7 @@ def read_line(pid, addr_maps):
                 print("`uint` command do not accept a num value more than 4 bytes, please use `uint64`. Or negative num value for int", file=sys.stderr)
                 continue
             value_type    = "uint"
-            ori_value_len = 4
+            ori_value_width = 4
             addr_list     = find_uint(addr_maps, ori_value)
             list_addr(addr_list)
                 
@@ -361,7 +397,7 @@ def read_line(pid, addr_maps):
                 print("`int64` command do not accept a num value more than 8 bytes.", file=sys.stderr)
                 continue
             value_type    = "int64"
-            ori_value_len = 8
+            ori_value_width = 8
             addr_list     = find_int64(addr_maps, ori_value)
             list_addr(addr_list)
 
@@ -378,7 +414,7 @@ def read_line(pid, addr_maps):
                 print("`uint64` command do not accept a num value more than 8 bytes or negative num value.", file=sys.stderr)
                 continue
             value_type    = "uint64"
-            ori_value_len = 8
+            ori_value_width = 8
             addr_list     = find_uint64(addr_maps, ori_value)
             list_addr(addr_list)
 
@@ -398,7 +434,7 @@ def read_line(pid, addr_maps):
                 print("`float` command do not accept a num value more than 4 bytes.", file=sys.stderr)
                 continue
             value_type    = "float"
-            ori_value_len = 4
+            ori_value_width = 4
             addr_list     = find_float(addr_maps, ori_value)
             list_addr(addr_list)
 
@@ -418,12 +454,41 @@ def read_line(pid, addr_maps):
                 print("`double` command do not accept a num value more than 8 bytes.", file=sys.stderr)
                 continue
             value_type    = "double"
-            ori_value_len = 8
+            ori_value_width = 8
             addr_list     = find_double(addr_maps, ori_value)
             list_addr(addr_list)
 
+        elif command[0] == "watch":
+            if not addr_list:
+                print("Please use search command to search value first.", file=sys.stderr)
+            if len(command) == 1:
+                match value_type:
+                    case "string":
+                        for addr in enumerate(addr_list):
+                            print(f"[{addr[0]}] {addr[1]}: {watch_str(addr[1], ori_value_width)}")
+                    case "int":
+                        for addr in enumerate(addr_list):
+                            print(f"[{addr[0]}] {addr[1]}: {watch_int(addr[1])}")
+                    case "uint":
+                        for addr in enumerate(addr_list):
+                            print(f"[{addr[0]}] {addr[1]}: {watch_uint(addr[1])}")
+                    case "int64":
+                        for addr in enumerate(addr_list):
+                            print(f"[{addr[0]}] {addr[1]}: {watch_int64(addr[1])}")
+                    case "uint64":
+                        for addr in enumerate(addr_list):
+                            print(f"[{addr[0]}] {addr[1]}: {watch_uint64(addr[1])}")
+                    case "float":
+                        for addr in enumerate(addr_list):
+                            print(f"[{addr[0]}] {addr[1]}: {watch_float(addr[1])}")
+                    case "double":
+                        for addr in enumerate(addr_list):
+                            print(f"[{addr[0]}] {addr[1]}: {watch_double(addr[1])}")
+                    case _:
+                        DEBUG(f"`{value_type}` have not achieved.",
+                              "Here should not be arrived.")
         else:
-            DEBUG(f"{command[0]} have not achieved.",
+            DEBUG(f"`{command[0]}` have not achieved.",
                   "UnkownCommand. Please input `string/int` to find data or `set` to modify value.")
 
 if __name__ == "__main__":
@@ -432,4 +497,4 @@ if __name__ == "__main__":
     addr_maps = get_maps(pid)
     for addr_map in addr_maps:
         print(f"Scaned {addr_map}.")
-    read_line(pid, addr_maps)
+    parse_command(pid, addr_maps)
