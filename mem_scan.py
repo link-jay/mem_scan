@@ -6,6 +6,8 @@ import sys
 import time
 import readline
 import struct
+import subprocess
+import signal
 
 DEBUG_V = True
 def DEBUG(debug_warning: str, run_warning: str):
@@ -198,6 +200,7 @@ def parse_command(pid, addr_maps):
 
         elif command[0] == "help":
             print("HELP MESSAGE:")
+            print("- sh:\t\tRun a shell command temply.")
             print("- string: \tSearch string value in memory.")
             print("- int: \t\tSearch signed 4 bytes int number value in memory.")
             print("- uint: \tSearch unsigned 4 bytes int number value in memory.")
@@ -212,6 +215,19 @@ def parse_command(pid, addr_maps):
             print("- delete: \tDelete the `number` addr of list.")
             print("- help: \tPrint this message.")
             
+        elif command[0] == "sh":
+            if len(command) < 2:
+                print("`sh` must accept a command.", file=sys.stderr)
+                continue
+            try:
+                temp_p = subprocess.Popen(command[1:])
+                temp_p.wait()
+            except KeyboardInterrupt:
+                temp_p.send_signal(signal.SIGINT)
+                temp_p.wait()
+                print()
+            del temp_p
+
         elif command[0] == "again":
             if len(command) == 1:
                 command.append(ori_value)
