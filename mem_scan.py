@@ -9,7 +9,7 @@ import struct
 import subprocess
 import signal
 
-DEBUG_V = True
+DEBUG_V = False
 def DEBUG(debug_warning: str, run_warning: str):
     if DEBUG_V:
         assert False, debug_warning
@@ -36,6 +36,7 @@ def get_maps(pid: str) -> list[tuple[int, int]]:
             addr_maps.append((start, end))
     return addr_maps
             
+# TODO: 尝试4/其他字节作为步长
 def search_target(addr_maps: list[tuple[int, int]], target_value: bytes) -> list[str]:
     addr_list: list[str] = []
     with open("/proc/"+pid+"/mem", "rb") as mem:
@@ -97,6 +98,30 @@ def search_again(pid: str, addr_list: list[str], new_value: bytes, value_width: 
                     
     return new_addr_list
 
+def search_i32_again(pid: str, addr_list: list[str], new_value: int) -> list[str]:
+    b_value = new_value.to_bytes(4, "little", signed=True)
+    return search_again(pid, addr_list, b_value, 4)
+
+def search_u32_again(pid: str, addr_list: list[str], new_value: int) -> list[str]:
+    b_value = new_value.to_bytes(4, "little")
+    return search_again(pid, addr_list, b_value, 4)
+
+def search_i64_again(pid: str, addr_list: list[str], new_value: int) -> list[str]:
+    b_value = new_value.to_bytes(8, "little", signed=True)
+    return search_again(pid, addr_list, b_value, 8)
+
+def search_u64_again(pid: str, addr_list: list[str], new_value: int) -> list[str]:
+    b_value = new_value.to_bytes(8, "little")
+    return search_again(pid, addr_list, b_value, 8)
+
+def search_f32_again(pid: str, addr_list: list[str], new_value: float) -> list[str]:
+    b_value = struct.pack("<f", new_value)
+    return search_again(pid, addr_list, b_value, 4)
+
+def search_f64_again(pid: str, addr_list: list[str], new_value: float) -> list[str]:
+    b_value = struct.pack("<d", new_value)
+    return search_again(pid, addr_list, b_value, 8)
+
 def watch_value(addr: str, value_width: int) -> bytes:
     with open("/proc/"+pid+"/mem", "rb") as mem:
             try:
@@ -138,7 +163,7 @@ def list_addr(addr_list: list[str]):
         for addr in enumerate(addr_list):
             print(f"[{addr[0]}] find it at {addr[1]}.")
     else:
-        print("not found.", file=sys.stderr)
+        print("Not found.", file=sys.stderr)
 
 def modify_target(target_list: list[str], new_value: bytes):
     with open("/proc/"+pid+"/mem", "rb+") as mem:
@@ -177,13 +202,29 @@ def modify_f64(target_list: list[str], mod_value: float):
     b_value = struct.pack("<d", mod_value)
     return modify_target(target_list, b_value)
 
-# TODO: 手动清理一些临时变量, 清理不会带出分支的变量
+# TODO: 拆分各命令解析
 def parse_command(pid, addr_maps):
     ori_value  = None
     addr_list  = []
-    value_type = "string"
+    value_type = "str"
     ori_value_width = 0
     
+    def __trans_int(argv: str, exp: str) -> [int|None]:
+        try:
+            value = int(argv)
+        except ValueError:
+            print(exp, file=sys.stderr)
+            return
+        return value
+
+    def __trans_float(argv: str, exp: str) -> [float|None]:
+        try:
+            value = float(argv)
+        except ValueError:
+            print(exp, file=sys.stderr)
+            return
+        return value
+
     while True:
         try:
             command = input("> ").split()
@@ -200,13 +241,13 @@ def parse_command(pid, addr_maps):
 
         elif command[0] == "help":
             print("HELP MESSAGE:")
-            print("- string: \tSearch string value in memory.")
+            print("- str: \t\tSearch string value in memory.")
             print("- i32: \t\tSearch signed 4 bytes int number value in memory.")
-            print("- u32: \tSearch unsigned 4 bytes int number value in memory.")
-            print("- i64: \tSearch signed 8 bytes int number value in memory.")
-            print("- u64: \tSearch unsigned 8 bytes int number value in memory.")
-            print("- f32: \tSearch 4 bytes float number value in memory.")
-            print("- f64: \tSearch 8 bytes float number value in memory.")
+            print("- u32: \t\tSearch unsigned 4 bytes int number value in memory.")
+            print("- i64: \t\tSearch signed 8 bytes int number value in memory.")
+            print("- u64: \t\tSearch unsigned 8 bytes int number value in memory.")
+            print("- f32: \t\tSearch 4 bytes float number value in memory.")
+            print("- f64: \t\tSearch 8 bytes float number value in memory.")
             print("- again: \tSearch value again. It accepts 0 arg for search original value or 1 arg for search a new value with same type.")
             print("- list: \tList the address(es) which was/were found in search command.")
             print("- watch: \tView values in the addresses list. Accepts no arguments to view all list values, or a number to view a specific value. You can monitor values in real time by appending a `[/[time]]` parameter (default: 2 seconds).")
@@ -231,50 +272,48 @@ def parse_command(pid, addr_maps):
         elif command[0] == "again":
             if len(command) == 1:
                 command.append(ori_value)
-                # 抽离成各类型的单独函数
             match value_type:
-                case "string":
-                    new_value  = bytes(" ".join(command[1:]), "utf-8")
-                    value_tyep = "string"
+                case "str":
+                    ori_value = " ".join(command[1:])
+                    new_value = bytes(ori_value, "utf-8")
                     ori_value_width  = len(new_value)
-                    addr_list  = search_again(pid, addr_list, new_value, ori_value_width)
-                    ori_value  = new_value.decode("utf-8")
+                    addr_list = search_again(pid, addr_list, new_value, ori_value_width)
                 case "i32":
-                    if len(command) > 2: print("`i32` type must accept 1 num argument or none.", file=sys.stderr)
-                    new_value  = int(command[1]).to_bytes(4, "little", signed=True)
-                    value_type = "i32"
-                    addr_list  = search_again(pid, addr_list, new_value, ori_value_width)
-                    ori_value  = int.from_bytes(new_value, "little", signed=True)
+                    if len(command) > 2: print("`i32` type must accept 1 num argument.", file=sys.stderr)
+                    if not (new_value := __trans_int(command[1], "`i32` type must accept 1 num value.")):
+                        continue
+                    ori_value = new_value
+                    addr_list = search_i32_again(pid, addr_list, new_value)
                 case "u32":
                     if len(command) > 2: print("`u32` type must accept 1 num argument or none.", file=sys.stderr)
-                    new_value  = int(command[1]).to_bytes(4, "little")
-                    value_type = "u32"
-                    addr_list  = search_again(pid, addr_list, new_value, ori_value_width)
-                    ori_value  = int.from_bytes(new_value, "little")
+                    if not (new_value := __trans_int(command[1], "`u32` type must accept 1 num value.")):
+                        continue
+                    ori_value = new_value
+                    addr_list = search_u32_again(pid, addr_list, new_value)
                 case "i64":
                     if len(command) > 2: print("`i64` type must accept 1 num argument or none.", file=sys.stderr)
-                    new_value  = int(command[1]).to_bytes(8, "little", signed=True)
-                    value_type = "i64"
-                    addr_list  = search_again(pid, addr_list, new_value, ori_value_width)
-                    ori_value  = int.from_bytes(new_value, "little", signed=True)
+                    if not (new_value := __trans_int(command[1], "`i64` type must accept 1 num value.")):
+                        continue
+                    ori_value = new_value
+                    addr_list = search_i64_again(pid, addr_list, new_value)
                 case "u64":
                     if len(command) > 2: print("`u64` type must accept 1 num argument or none.", file=sys.stderr)
-                    new_value  = int(command[1]).to_bytes(8, "little")
-                    value_type = "u64"
-                    addr_list  = search_again(pid, addr_list, new_value, ori_value_width)
-                    ori_value  = int.from_bytes(new_value, "little")
+                    if not (new_value := __trans_int(command[1], "`u64` type must accept 1 num value.")):
+                        continue
+                    ori_value = new_value
+                    addr_list = search_u64_again(pid, addr_list, new_value)
                 case "f32":
                     if len(command) > 2: print("`f32` type must accept 1 num argument or none.", file=sys.stderr)
-                    new_value  = struct.pack("<f", float(command[1]))
-                    value_type = "f32"
-                    addr_list  = search_again(pid, addr_list, new_value, ori_value_width)
-                    ori_value  = struct.unpack("<f", new_value)[0]
+                    if not (new_value := __trans_float(command[1], "`f32` type must accept 1 num value.")):
+                        continue
+                    ori_value = new_value
+                    addr_list = search_f32_again(pid, addr_list, new_value)
                 case "f64":
                     if len(command) > 2: print("`f64` type must accept 1 num argument or none.", file=sys.stderr)
-                    new_value  = struct.pack("<d", float(command[1]))
-                    value_type = "f64"
-                    addr_list  = search_again(pid, addr_list, new_value, ori_value_width)
-                    ori_value  = struct.unpack("<d", new_value)[0]
+                    if not (new_value := __trans_float(command[1], "`f64` type must accept 1 num value.")):
+                        continue
+                    ori_value = new_value
+                    addr_list = search_f64_again(pid, addr_list, new_value)
                 case _:
                     DEBUG(f"again `{value_type}` have not achieved.",
                           "Here should not be arrived.")
@@ -288,88 +327,69 @@ def parse_command(pid, addr_maps):
                 print("Please input a value to modify.", file=sys.stderr)
                 continue
             match value_type:
-                case "string":
+                case "str":
                     mod_value = " ".join(command[1:])
                     if len(bytes(mod_value, "utf-8")) > ori_value_width:
                         print("Length of string value should not be longer than original.", file=sys.stderr)
                         continue
                     modify_str(addr_list, mod_value)
                 case "i32":
-                    try:
-                        mod_value = int(command[1])
-                    except ValueError:
-                        print("`i32` type must accept a num value.", file=sys.stderr)
+                    if not (mod_value := __trans_int(command[1], "`i32` type must accept a num value.")):
                         continue
                     if mod_value > MAX_I32 or mod_value < -MAX_I32:
                         print("`i32` type do not accept a num value more than 4 bytes, please use `i64`.", file=sys.stderr)
                         continue
                     modify_i32(addr_list, mod_value)
                 case "u32":
-                    try:
-                        mod_value = int(command[1])
-                    except ValueError:
-                        print("`u32` type must accept a num value.", file=sys.stderr)
+                    if not (mod_value := __trans_int(command[1], "`u32` type must accept a num value.")):
+                        continue
+                    if mod_value > MAX_I32 or mod_value < -MAX_I32:
+                        print("`i32` type do not accept a num value more than 4 bytes, please use `i64`.", file=sys.stderr)
                         continue
                     if mod_value > MAX_U32 or mod_value < 0:
                         print("`u32` type do not accept a num value more than 4 bytes, please use `u64`. Or negative num value for i32", file=sys.stderr)
                         continue
                     modify_u32(addr_list, mod_value)
                 case "i64":
-                    try:
-                        mod_value = int(command[1])
-                    except ValueError:
-                        print("`i64` type must accept a num value.", file=sys.stderr)
+                    if not (mod_value := __trans_int(command[1], "`i64` type must accept a num value.")):
                         continue
                     if mod_value > MAX_I64 or mod_value < -MAX_I64:
                         print("`i64` tyep do not accept a num value more than 8 bytes.", file=sys.stderr)
                         continue
                     modify_i64(addr_list, mod_value)
                 case "u64":
-                    try:
-                        mod_value = int(command[1])
-                    except ValueError:
-                        print("`u64` type must accept a num value.", file=sys.stderr)
+                    if not (mod_value := __trans_int(command[1], "`u64` type must accept a num value.")):
                         continue
                     if mod_value > MAX_U64 or mod_value < 0:
                         print("`u64` type do not accept a num value more than 8 bytes or negative num value.", file=sys.stderr)
                         continue
                     modify_u64(addr_list, mod_value)
                 case "f32":
-                    try:
-                        mod_value = float(command[1])
-                    except ValueError:
-                        print("`f32` type must accept a num value.", file=sys.stderr)
+                    if not (mod_value := __trans_float(command[1], "`f32` type must accept a num value.")):
                         continue
-                    if (mod_value > MAX_F32
-                        or mod_value < -MAX_F32
-                        or -MIN_F32 < mod_value < 0
-                        or 0 < mod_value < MIN_F32):
+                    if (mod_value > MAX_F32 or mod_value < -MAX_F32
+                        or -MIN_F32 < mod_value < 0 or 0 < mod_value < MIN_F32):
                         print("`f32` type do not accept a num value more than 4 bytes.", file=sys.stderr)
                         continue
                     modify_f32(addr_list, mod_value)
                 case "f64":
-                    try:
-                        mod_value = float(command[1])
-                    except ValueError:
-                        print("`f64` type must accept a num value.", file=sys.stderr)
+                    if not (mod_value := __trans_float(command[1], "`f32` type must accept a num value.")):
                         continue
-                    if (mod_value > MAX_F64
-                        or mod_value < -MAX_F64
-                        or -MIN_F64 < mod_value < 0
-                        or 0 < mod_value < MIN_F64):
+                    if (mod_value > MAX_F64 or mod_value < -MAX_F64
+                        or -MIN_F64 < mod_value < 0 or 0 < mod_value < MIN_F64):
                         print("`f64` type do not accept a num value more than 8 bytes.", file=sys.stderr)
                         continue
                     modify_f64(addr_list, mod_value)
                 case _:
                     DEBUG(f"set `{value_type}` have not achieved.",
                           "Here should not be arrived.")
-
-        elif command[0] == "string":
+                    
+        elif command[0] == "str":
             if len(command) < 2:
                 print("`string` command must accept 1 str argument.", file=sys.stderr)
                 continue
             ori_value  = " ".join(command[1:])
-            value_type = "string"
+            value_type = "str"
             ori_value_width = len(bytes(ori_value, "utf-8"))
             addr_list  = search_str(addr_maps, ori_value)
             list_addr(addr_list)
@@ -378,10 +398,7 @@ def parse_command(pid, addr_maps):
             if len(command) != 2:
                 print("`i32` command must accept 1 num argument.", file=sys.stderr)
                 continue
-            try:
-                ori_value = int(command[1])
-            except ValueError:
-                print("`i32` command must accept a num value.", file=sys.stderr)
+            if not (ori_value := __trans_int(command[1], "`i32` command must accept a num value.")):
                 continue
             if ori_value > MAX_I32 or ori_value < -MAX_I32:
                 print("`i32` command do not accept a num value more than 4 bytes, please use `i64`.", file=sys.stderr)
@@ -395,10 +412,7 @@ def parse_command(pid, addr_maps):
             if len(command) != 2:
                 print("`u32` command must accept 1 num argument.", file=sys.stderr)
                 continue
-            try:
-                ori_value = int(command[1])
-            except ValueError:
-                print("`u32` command must accept a num value.", file=sys.stderr)
+            if not (ori_value := __trans_int(command[1], "`u32` command must accept a num value.")):
                 continue
             if ori_value > MAX_U32 or ori_value < 0:
                 print("`u32` command do not accept a num value more than 4 bytes, please use `u64`. Or negative num value for int", file=sys.stderr)
@@ -412,10 +426,7 @@ def parse_command(pid, addr_maps):
             if len(command) != 2:
                 print("`i64` command must accept 1 num argument.", file=sys.stderr)
                 continue
-            try:
-                ori_value = int(command[1])
-            except ValueError:
-                print("`i64` command must accept a num value.", file=sys.stderr)
+            if not (ori_value := __trans_int(command[1], "`i64` command must accept a num value.")):
                 continue
             if ori_value > MAX_I64 or ori_value < -MAX_I64:
                 print("`i64` command do not accept a num value more than 8 bytes.", file=sys.stderr)
@@ -429,10 +440,7 @@ def parse_command(pid, addr_maps):
             if len(command) != 2:
                 print("`u64` command must accept 1 num argument.", file=sys.stderr)
                 continue
-            try:
-                ori_value = int(command[1])
-            except ValueError:
-                print("`u64` command must accept a num value.", file=sys.stderr)
+            if not (ori_value := __trans_int(command[1], "`u64` command must accept a num value.")):
                 continue
             if ori_value > MAX_U64 or ori_value < 0:
                 print("`u64` command do not accept a num value more than 8 bytes or negative num value.", file=sys.stderr)
@@ -446,15 +454,10 @@ def parse_command(pid, addr_maps):
             if len(command) != 2:
                 print("`f32` command must accept 1 num argument.", file=sys.stderr)
                 continue
-            try:
-                ori_value = float(command[1])
-            except ValueError:
-                print("`f32` command must accept a num value.", file=sys.stderr)
+            if not (ori_value := __trans_float(command[1], "`f32` command must accept a num value.")):
                 continue
-            if (ori_value > MAX_F32
-                or ori_value < -MAX_F32
-                or -MIN_F32 < ori_value < 0
-                or 0 < ori_value < MIN_F32):
+            if (ori_value > MAX_F32 or ori_value < -MAX_F32
+                or -MIN_F32 < ori_value < 0 or 0 < ori_value < MIN_F32):
                 print("`f32` command do not accept a num value more than 4 bytes.", file=sys.stderr)
                 continue
             value_type = "f32"
@@ -466,15 +469,10 @@ def parse_command(pid, addr_maps):
             if len(command) != 2:
                 print("`f64` command must accept 1 num argument.", file=sys.stderr)
                 continue
-            try:
-                ori_value = float(command[1])
-            except ValueError:
-                print("`f64` command must accept a num value.", file=sys.stderr)
+            if not (ori_value := __trans_float(command[1], "`f64` command must accept a num value.")):
                 continue
-            if (ori_value > MAX_F64
-                or ori_value < -MAX_F64
-                or -MIN_F64 < ori_value < 0
-                or 0 < ori_value < MIN_F64):
+            if (ori_value > MAX_F64 or ori_value < -MAX_F64
+                or -MIN_F64 < ori_value < 0 or 0 < ori_value < MIN_F64):
                 print("`f64` command do not accept a num value more than 8 bytes.", file=sys.stderr)
                 continue
             value_type = "f64"
@@ -534,15 +532,15 @@ def parse_command(pid, addr_maps):
                             print()
                             break
                 return wrapper
-            # __string_refresher = __refresher(__string_refresher) -> wrapper
-            # __string_refresher() -> wrapper() ->...func()...
+            # __str_refresher = __refresher(__str_refresher) -> wrapper
+            # __str_refresher() -> wrapper() ->...func()...
             match value_type:
-                case "string":
+                case "str":
                     @__refresher
-                    def __string_refresher():
+                    def __str_refresher():
                         for addr in temp_addr_list:
                             print(f"[{addr[0]}] {addr[1]}: {watch_str(addr[1], ori_value_width)}")
-                    __string_refresher()
+                    __str_refresher()
                 case "i32":
                     @__refresher
                     def __i32_refresher():
@@ -601,7 +599,7 @@ def parse_command(pid, addr_maps):
 
         else:
             DEBUG(f"`{command[0]}` have not achieved.",
-                  "UnkownCommand. Please input `string/i32` to search data or `set` to modify value.")
+                  "UnkownCommand. Please input `str/i32` to search data or `set` to modify value.")
 
 if __name__ == "__main__":
     assert len(sys.argv) == 2, "Script need a pid as argv."
