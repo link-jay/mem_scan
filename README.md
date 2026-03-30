@@ -19,7 +19,7 @@ It supports search command like `int`/`string` to locate addresses. The non-sear
 * [ ] delete addr
 * [x] check value
 * [ ] modify value continuously
-* [ ] monitor value continueously
+* [x] monitor value continueously
 * [ ] support shell command
 
 ## Command
@@ -34,7 +34,7 @@ It supports search command like `int`/`string` to locate addresses. The non-sear
 `double num`: Search `float64` value in memory.  
 `again [str|num]`: Search a value again by last type of search.It accepts 0 arg to search original value or a new value in same type to search again.  
 `list`: List the addresses found in search command.  
-`watch [number]`: Check the value in the addresses list. It accepts 0 arg to check all value in the list or a number to check specified value.  
+`watch [[number][/[time]]]`: View values in the addresses list. Accepts no arguments to view all list values, or a number to view a specific value. You can monitor values in real time by appending a `[/[time]]` parameter (default: 2 seconds).  
 `set value`: modify the values in the `list`.  
 
 ## Example

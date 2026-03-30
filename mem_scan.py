@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 
 # TODO: 合并int类，float类操作
-# TODO: 调整排版
+# TODO: 修缮反馈文本
 import sys
 import time
 import readline
 import struct
 
-DEBUG_V = True
+DEBUG_V = False
 def DEBUG(debug_warning: str, run_warning: str):
-    if DEBUG_V: assert False, debug_warning
-    else: print(run_warning)
+    if DEBUG_V:
+        assert False, debug_warning
+    else:
+        print(run_warning, file=sys.stderr)
 
 MAX_INT32   = (1 << 31) - 1
 MAX_UINT32  = (1 << 32) - 1
@@ -144,7 +146,6 @@ def modify_target(target_list: list[str], new_value: bytes):
                 mem.write(new_value)
             except OSError:
                 continue
-    return
             
 def modify_str(target_list: list[str], mod_value: str):
     b_value = bytes(mod_value, "utf-8")
@@ -179,7 +180,7 @@ def parse_command(pid, addr_maps):
     ori_value  = None
     addr_list  = []
     value_type = "string"
-    ori_value_width  = 0
+    ori_value_width = 0
     
     while True:
         try:
@@ -207,7 +208,7 @@ def parse_command(pid, addr_maps):
             print("- again: \tSearch value again. It accepts 0 arg for search original value or 1 arg for search a new value with same type.")
             print("- set: \t\tModify value(s) which was/were search command.")
             print("- list: \tList the address(es) which was/were found in search command.")
-            print("- watch: \tCheck the values in the addresses list. It accepts 0 arg to check all value or 1 arg to check a specified value.")
+            print("- watch: \tView values in the addresses list. Accepts no arguments to view all list values, or a number to view a specific value. You can monitor values in real time by appending a `[/[time]]` parameter (default: 2 seconds).")
             print("- help: \tPrint this message.")
             
         elif command[0] == "again":
@@ -258,7 +259,7 @@ def parse_command(pid, addr_maps):
                     ori_value  = struct.unpack("<d", new_value)[0]
                 case _:
                     DEBUG(f"again `{value_type}` have not achieved.",
-                          "Here should not be arrive.")
+                          "Here should not be arrived.")
             list_addr(addr_list)
                 
         elif command[0] == "set":
@@ -349,10 +350,10 @@ def parse_command(pid, addr_maps):
             if len(command) < 2:
                 print("`string` command must accept 1 str argument.", file=sys.stderr)
                 continue
-            ori_value     = " ".join(command[1:])
-            value_type    = "string"
+            ori_value  = " ".join(command[1:])
+            value_type = "string"
             ori_value_width = len(bytes(ori_value, "utf-8"))
-            addr_list     = find_str(addr_maps, ori_value)
+            addr_list  = find_str(addr_maps, ori_value)
             list_addr(addr_list)
             
         elif command[0] == "int":
@@ -367,9 +368,9 @@ def parse_command(pid, addr_maps):
             if ori_value > MAX_INT32 or ori_value < -MAX_INT32:
                 print("`int` command do not accept a num value more than 4 bytes, please use `int64`.", file=sys.stderr)
                 continue
-            value_type    = "int"
+            value_type = "int"
             ori_value_width = 4
-            addr_list     = find_int(addr_maps, ori_value)
+            addr_list  = find_int(addr_maps, ori_value)
             list_addr(addr_list)
 
         elif command[0] == "uint":
@@ -384,9 +385,9 @@ def parse_command(pid, addr_maps):
             if ori_value > MAX_UINT32 or ori_value < 0:
                 print("`uint` command do not accept a num value more than 4 bytes, please use `uint64`. Or negative num value for int", file=sys.stderr)
                 continue
-            value_type    = "uint"
+            value_type = "uint"
             ori_value_width = 4
-            addr_list     = find_uint(addr_maps, ori_value)
+            addr_list  = find_uint(addr_maps, ori_value)
             list_addr(addr_list)
                 
         elif command[0] == "int64":
@@ -401,9 +402,9 @@ def parse_command(pid, addr_maps):
             if ori_value > MAX_INT64 or ori_value < -MAX_INT64:
                 print("`int64` command do not accept a num value more than 8 bytes.", file=sys.stderr)
                 continue
-            value_type    = "int64"
+            value_type = "int64"
             ori_value_width = 8
-            addr_list     = find_int64(addr_maps, ori_value)
+            addr_list  = find_int64(addr_maps, ori_value)
             list_addr(addr_list)
 
         elif command[0] == "uint64":
@@ -418,9 +419,9 @@ def parse_command(pid, addr_maps):
             if ori_value > MAX_UINT64 or ori_value < 0:
                 print("`uint64` command do not accept a num value more than 8 bytes or negative num value.", file=sys.stderr)
                 continue
-            value_type    = "uint64"
+            value_type = "uint64"
             ori_value_width = 8
-            addr_list     = find_uint64(addr_maps, ori_value)
+            addr_list  = find_uint64(addr_maps, ori_value)
             list_addr(addr_list)
 
         elif command[0] == "float":
@@ -438,9 +439,9 @@ def parse_command(pid, addr_maps):
                 or 0 < ori_value < MIN_FLOAT32):
                 print("`float` command do not accept a num value more than 4 bytes.", file=sys.stderr)
                 continue
-            value_type    = "float"
+            value_type = "float"
             ori_value_width = 4
-            addr_list     = find_float(addr_maps, ori_value)
+            addr_list  = find_float(addr_maps, ori_value)
             list_addr(addr_list)
 
         elif command[0] == "double":
@@ -458,9 +459,9 @@ def parse_command(pid, addr_maps):
                 or 0 < ori_value < MIN_FLOAT64):
                 print("`double` command do not accept a num value more than 8 bytes.", file=sys.stderr)
                 continue
-            value_type    = "double"
+            value_type = "double"
             ori_value_width = 8
-            addr_list     = find_double(addr_maps, ori_value)
+            addr_list  = find_double(addr_maps, ori_value)
             list_addr(addr_list)
 
         elif command[0] == "watch":
@@ -477,10 +478,10 @@ def parse_command(pid, addr_maps):
                     try:
                         number = int(watch_arg_value[0])
                     except ValueError:
-                        print("`watch` must accept a num in the list.", file=sys.stderr)
+                        print("`watch` must accept a number in the list.", file=sys.stderr)
                         return
                     if number > len(addr_list) - 1 or number < 0:
-                        print(f"{number} is out of addr_list, use `list` to checkout.")
+                        print(f"{number} is out of addr_list, use `list` to checkout.", file=sys.stderr)
                         return
                     return [(number, addr_list[number]),]
                 if len(watch_arg_value) == 1:
@@ -496,13 +497,13 @@ def parse_command(pid, addr_maps):
                             print("refresh time of `watch` must accept a num value.", file=sys.stderr)
                             continue
                         if refresh_time < 0:
-                            print(f"refresh time of `watch` should not be negative.")
+                            print(f"refresh time of `watch` should not be negative.", file=sys.stderr)
                             continue
                 else:
+                    print("`watch` get too much args. Please checkout.", file=sys.stderr)
                     continue
-                    print("`watch` get too much args. Please checkout.")
             elif len(command) > 2:
-                print("`watch` get too much args. Please checkout.")
+                print("`watch` get too much args. Please checkout.", file=sys.stderr)
                 continue
             def __refresher(func):
                 def wrapper():
@@ -563,7 +564,7 @@ def parse_command(pid, addr_maps):
                 case _:
                     DEBUG(f"`{value_type}` have not achieved.",
                               "Here should not be arrived.")
-                
+            del temp_addr_list    
         else:
             DEBUG(f"`{command[0]}` have not achieved.",
                   "UnkownCommand. Please input `string/int` to find data or `set` to modify value.")
