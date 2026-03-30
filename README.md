@@ -5,26 +5,28 @@ It supports search command like `int`/`string` to locate addresses. The non-sear
 
 ## Feature
 
-* [x] find text
-* [x] modify text
-* [x] find int32
-* [x] modify int32
-* [x] find int64
-* [x] modify int64
-* [x] find float32
-* [x] modify float32
-* [x] find float64
-* [x] modify float64
+* [x] find str
+* [x] modify str
+* [ ] find i8/i16
+* [ ] modify i8/i16
+* [ ] find u8/u16
+* [ ] modify u8/u16
+* [x] find i32/i64
+* [x] modify i32/i64
+* [x] find u32/u64
+* [x] modify u32/u64
+* [x] find f32/f64
+* [x] modify f32/f64
 * [x] search many times
 * [x] delete addr
 * [x] check value
 * [ ] modify value continuously
 * [x] monitor value continueously
-* [ ] support shell command
+* [x] support shell command
 
 ## Command
 
-`help`: print help massage.  
+`help`: Print help massage.  
 `sh cmd`: Run a shell command temply.  
 `string str`: Search `str` value in memory.  
 `int num`: Search signed `num32` value in memory.  
@@ -37,7 +39,7 @@ It supports search command like `int`/`string` to locate addresses. The non-sear
 `list`: List the addresses found in search command.  
 `watch [[number][/[time]]]`: View values in the addresses list. Accepts no arguments to view all list values, or a number to view a specific value. You can monitor values in real time by appending a `[/[time]]` parameter (default: 2 seconds).  
 `delete number`: Delete the `number` addr of list.
-`set value`: modify the values in the `list`.  
+`set value`: Modify the values in the `list`.  
 
 ## Example
 

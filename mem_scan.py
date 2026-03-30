@@ -200,7 +200,6 @@ def parse_command(pid, addr_maps):
 
         elif command[0] == "help":
             print("HELP MESSAGE:")
-            print("- sh:\t\tRun a shell command temply.")
             print("- string: \tSearch string value in memory.")
             print("- int: \t\tSearch signed 4 bytes int number value in memory.")
             print("- uint: \tSearch unsigned 4 bytes int number value in memory.")
@@ -209,10 +208,11 @@ def parse_command(pid, addr_maps):
             print("- float: \tSearch 4 bytes float number value in memory.")
             print("- double: \tSearch 8 bytes float number value in memory.")
             print("- again: \tSearch value again. It accepts 0 arg for search original value or 1 arg for search a new value with same type.")
-            print("- set: \t\tModify value(s) which was/were search command.")
             print("- list: \tList the address(es) which was/were found in search command.")
             print("- watch: \tView values in the addresses list. Accepts no arguments to view all list values, or a number to view a specific value. You can monitor values in real time by appending a `[/[time]]` parameter (default: 2 seconds).")
             print("- delete: \tDelete the `number` addr of list.")
+            print("- set: \t\tModify value(s) which was/were search command.")
+            print("- sh:\t\tRun a shell command temply.")
             print("- help: \tPrint this message.")
             
         elif command[0] == "sh":
