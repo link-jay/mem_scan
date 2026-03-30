@@ -7,7 +7,7 @@ import time
 import readline
 import struct
 
-DEBUG_V = False
+DEBUG_V = True
 def DEBUG(debug_warning: str, run_warning: str):
     if DEBUG_V:
         assert False, debug_warning
@@ -136,7 +136,7 @@ def list_addr(addr_list: list[str]):
         for addr in enumerate(addr_list):
             print(f"[{addr[0]}] find it at {addr[1]}.")
     else:
-        print("not found.")
+        print("not found.", file=sys.stderr)
 
 def modify_target(target_list: list[str], new_value: bytes):
     with open("/proc/"+pid+"/mem", "rb+") as mem:
@@ -175,7 +175,7 @@ def modify_double(target_list: list[str], mod_value: float):
     b_value = struct.pack("<d", mod_value)
     return modify_target(target_list, b_value)
 
-# TODO: 手动清理一些临时变量
+# TODO: 手动清理一些临时变量, 清理不会带出分支的变量
 def parse_command(pid, addr_maps):
     ori_value  = None
     addr_list  = []
@@ -209,6 +209,7 @@ def parse_command(pid, addr_maps):
             print("- set: \t\tModify value(s) which was/were search command.")
             print("- list: \tList the address(es) which was/were found in search command.")
             print("- watch: \tView values in the addresses list. Accepts no arguments to view all list values, or a number to view a specific value. You can monitor values in real time by appending a `[/[time]]` parameter (default: 2 seconds).")
+            print("- delete: \tDelete the `number` addr of list.")
             print("- help: \tPrint this message.")
             
         elif command[0] == "again":
@@ -565,6 +566,22 @@ def parse_command(pid, addr_maps):
                     DEBUG(f"`{value_type}` have not achieved.",
                               "Here should not be arrived.")
             del temp_addr_list    
+            
+        elif command[0] == "delete":
+            if len(command) != 2:
+                print("`delete` command must accept 1 argv.", file=sys.stderr)
+                continue
+            try:
+                temp_addr_number = int(command[1])
+            except ValueError:
+                print("`delete` command must accept a number in the list.", file=sys.stderr)
+                continue
+            if temp_addr_number > len(addr_list) - 1 or temp_addr_number < 0:
+                print(f"{temp_addr_number} is out of addr_list, use `list` to checkout.", file=sys.stderr)
+                continue
+            print(f"[{temp_addr_number}] {addr_list.pop(temp_addr_number)} has been deleted.")
+            del temp_addr_number
+
         else:
             DEBUG(f"`{command[0]}` have not achieved.",
                   "UnkownCommand. Please input `string/int` to find data or `set` to modify value.")
