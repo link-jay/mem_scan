@@ -25,6 +25,7 @@ It supports search command like `int`/`string` to locate addresses. The non-sear
 ## Command
 
 `help`: print help massage.  
+`sh cmd`: Run a shell command temply.  
 `string str`: Search `str` value in memory.  
 `int num`: Search signed `num32` value in memory.  
 `uint num`: Search unsigned `num32` value in memory.  
