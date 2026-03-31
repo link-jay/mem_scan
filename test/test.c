@@ -5,17 +5,25 @@
 int main()
 {
   
-  int i = 2101; const unsigned int j = 2147483647; const int k = -189223; const uint64_t m= 8589934592;
-  const int64_t n = -7234567890; const double foo = 1.7382948908; const float bar = 3.14156;
+  int i = 2101;
+  const int j = -189223;
+  const unsigned int k = 2147483647;
+  const int64_t m = -7234567890;
+  const uint64_t n= 8589934592;
+  const float foo = 3.14156;
+  const double bar = 1.7382948908;
+  
   while (1) {
     ++i;
-    printf("%d.string: hello, world."
-	   "unsigned int is %u."
-	   "signed int is %d."
-	   "uint64 is %llu."
-	   "int64 is %lld."
-	   "double is %.15f."
-	   "float is %f.\n",
+    printf("[%d]\n"
+	   "string: hello, world.\n"
+	   "i32 is %d.\n"
+	   "u32 is %u.\n"
+	   "i64 is %lld.\n"
+	   "u64 is %llu.\n"
+	   "f32 is %f.\n"
+	   "f64 is %.15f.\n"
+	   "--------------------\n",
 	   i, j, k, m, n, foo, bar);
     sleep(2);
   }

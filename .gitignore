@@ -1,5 +1,6 @@
 venv/
 */.mypy_cache/
-test/*.out
-test/script*
 TAGS
+test/test.out
+test/script.py
+/test/commands.txt
