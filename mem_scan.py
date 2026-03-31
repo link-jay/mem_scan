@@ -207,21 +207,25 @@ def modify_f64(target_list: list[str], mod_value: float):
     return modify_target(target_list, b_value)
 
 def print_help():
-    print("HELP MESSAGE:")
-    print("- str: \t\tSearch string value in memory.")
-    print("- i32: \t\tSearch signed 4 bytes int number value in memory.")
-    print("- u32: \t\tSearch unsigned 4 bytes int number value in memory.")
-    print("- i64: \t\tSearch signed 8 bytes int number value in memory.")
-    print("- u64: \t\tSearch unsigned 8 bytes int number value in memory.")
-    print("- f32: \t\tSearch 4 bytes float number value in memory.")
-    print("- f64: \t\tSearch 8 bytes float number value in memory.")
-    print("- again: \tSearch value again. It accepts 0 arg for search original value or 1 arg for search a new value with same type.")
-    print("- list: \tList the address(es) which was/were found in search command.")
-    print("- watch: \tView values in the addresses list. Accepts no arguments to view all list values, or a number to view a specific value. You can monitor values in real time by appending a `[/[time]]` parameter (default: 2 seconds).")
-    print("- delete: \tDelete the `number` addr of list.")
-    print("- set: \t\tModify value(s) which was/were search command.")
-    print("- sh:\t\tRun a shell command temply.")
-    print("- help: \tPrint this message.")
+    help_message = [
+        "HELP MESSAGE:",
+        "- str: \t\tSearch string value in memory.",
+        "- i32: \t\tSearch signed 4 bytes int number value in memory.",
+        "- u32: \t\tSearch unsigned 4 bytes int number value in memory.",
+        "- i64: \t\tSearch signed 8 bytes int number value in memory.",
+        "- u64: \t\tSearch unsigned 8 bytes int number value in memory.",
+        "- f32: \t\tSearch 4 bytes float number value in memory.",
+        "- f64: \t\tSearch 8 bytes float number value in memory.",
+        "- again: \tSearch value again. It accepts 0 arg for search original value or 1 arg for search a new value with same type.",
+        "- list: \tList the address(es) which was/were found in search command.",
+        "- watch: \tView values in the addresses list. Accepts no arguments to view all list values, or a number to view a specific value. You can monitor values in real time by appending a `[/[time]]` parameter (default: 2 seconds).",
+        "- delete: \tDelete the `number` addr of list.",
+        "- set: \t\tModify value(s) which was/were search command.",
+        "- sh:\t\tRun a shell command temply.",
+        "- help: \tPrint this message.",
+    ]
+    for line in help_message:
+        print(line)
 
 def run_sh(command) -> bool:
     if len(command) < 2:
@@ -273,7 +277,6 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
             value_type = "str"
             ori_value_width = len(bytes(ori_value, "utf-8"))
             addr_list  = search_str(addr_maps, ori_value)
-            
         case "i32":
             if not __check_lenght(value_type):
                 return FAILURE
@@ -285,7 +288,6 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
             value_type = "i32"
             ori_value_width = 4
             addr_list  = search_i32(addr_maps, ori_value)
-    
         case "u32":
             if not __check_lenght(value_type):
                 return FAILURE
@@ -297,7 +299,6 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
             value_type = "u32"
             ori_value_width = 4
             addr_list  = search_u32(addr_maps, ori_value)
-                
         case "i64":
             if not __check_lenght(value_type):
                 return FAILURE
@@ -309,7 +310,6 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
             value_type = "i64"
             ori_value_width = 8
             addr_list  = search_i64(addr_maps, ori_value)
-    
         case "u64":
             if not __check_lenght(value_type):
                 return FAILURE
@@ -321,7 +321,6 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
             value_type = "u64"
             ori_value_width = 8
             addr_list  = search_u64(addr_maps, ori_value)
-    
         case "f32":
             if not __check_lenght(value_type):
                 return FAILURE
@@ -334,7 +333,6 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
             value_type = "f32"
             ori_value_width = 4
             addr_list  = search_f32(addr_maps, ori_value)
-    
         case "f64":
             if not __check_lenght(value_type):
                 return FAILURE
@@ -347,12 +345,10 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
             value_type = "f64"
             ori_value_width = 8
             addr_list  = search_f64(addr_maps, ori_value)
-
         case _:
             DEBUG(f"The `{command[0]}` have not achived.",
                   "Here should not be arrived.")
             return FAILURE
-
     ori_value_info["value"] = ori_value
     ori_value_info["type"] = value_type
     ori_value_info["width"] = ori_value_width
@@ -627,7 +623,6 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
     ori_value_info["addr_list"] = addr_list
     return SUCCESS
 
-# TODO: 拆分各命令解析
 def parse_command(pid, addr_maps):
     ori_value_info = {
         "value" : None,
@@ -643,32 +638,42 @@ def parse_command(pid, addr_maps):
             print("\nexit."); sys.exit(0)
         except KeyboardInterrupt:
             print("\nexit."); sys.exit(0)
+
         if not command:
             continue
+
         elif command[0] == "list":
             list_addr(ori_value_info["addr_list"])
+
         elif command[0] == "help":
             print_help()
+
         elif command[0] == "sh":
             if not run_sh(command):
                 continue
+
         elif command[0] == "again":
             if not parse_again(ori_value_info, command):
                 continue
             list_addr(ori_value_info["addr_list"])
+
         elif command[0] == "set":
             if not parse_set(ori_value_info, command):
                 continue
+
         elif command[0] == "watch":
             if not parse_watch(ori_value_info, command):
                 continue
+
         elif command[0] == "delete":
             if not parse_delete(ori_value_info ,command):
                 continue
+
         elif command[0] in SEARCH_COMMAND:
             if not parse_search(ori_value_info, command):
                 continue
             list_addr(ori_value_info["addr_list"])
+
         else:
             DEBUG(f"`{command[0]}` have not achieved.",
                   "UnkownCommand. Please input `str/i32` to search data or `set` to modify value.")
