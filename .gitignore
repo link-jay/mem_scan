@@ -4,3 +4,4 @@ TAGS
 test/test.out
 test/script.py
 /test/commands.txt
+/__pycache__/
