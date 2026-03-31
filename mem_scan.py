@@ -231,11 +231,11 @@ def run_sh(command) -> bool:
         print("`sh` must accept a command.", file=sys.stderr)
         return FAILURE
     try:
-        temp_p = subprocess.Popen(command[1:])
-        temp_p.wait()
+        temp_sh = subprocess.Popen(command[1:])
+        temp_sh.wait()
     except KeyboardInterrupt:
-        temp_p.send_signal(signal.SIGINT)
-        temp_p.wait()
+        temp_sh.send_signal(signal.SIGINT)
+        temp_sh.wait()
         print()
     return SUCCESS
 
@@ -436,33 +436,27 @@ def parse_watch(ori_value_info: dict, command: list[str]) -> bool:
     if not addr_list:
         print("Please use search command to search value first.", file=sys.stderr)
         return FAILURE
-    temp_addr_list: list[tuple[int, str]]|bool = list(enumerate(addr_list))
+    ord_addr_list: list[tuple[int, str]]|bool = list(enumerate(addr_list))
     refresh = False
     refresh_time = 2
     if len(command) == 2:
         watch_arg_value = command[1].split("/")
         # watch 1 || watch 1/ || watch /78 || watch /
         def __get_single_addr() -> list[tuple[int, str]]|bool:
-            try:
-                number = int(watch_arg_value[0])
-            except ValueError:
-                print("`watch` must accept a number from the list.", file=sys.stderr)
+            if (number := __trans_int(watch_arg_value[0], "`watch` must accept a number from the list.")):
                 return FAILURE
             if number > len(addr_list) - 1 or number < 0:
                 print(f"{number} is out of list, use `list` to checkout.", file=sys.stderr)
                 return FAILURE
             return [(number, addr_list[number]),]
         if len(watch_arg_value) == 1:
-            if not (temp_addr_list := __get_single_addr()): return FAILURE
+            if not (ord_addr_list := __get_single_addr()): return FAILURE
         elif len(watch_arg_value) == 2:
             refresh = True
             if watch_arg_value[0]:
-                if not (temp_addr_list := __get_single_addr()): return FAILURE
+                if not (ord_addr_list := __get_single_addr()): return FAILURE
             if watch_arg_value[1]:
-                try:
-                    refresh_time = int(watch_arg_value[1])
-                except ValueError:
-                    print("refresh time of `watch` must accept a num value.", file=sys.stderr)
+                if (refresh_time := __trans_int(watch_arg_value[1], "refresh time of `watch` must accept a num value.")):
                     return FAILURE
                 if refresh_time < 0:
                     print(f"refresh time of `watch` should not be negative.", file=sys.stderr)
@@ -480,43 +474,43 @@ def parse_watch(ori_value_info: dict, command: list[str]) -> bool:
         case "str":
             @__refresher(refresh, refresh_time)
             def __str_refresher():
-                for addr in temp_addr_list:
+                for addr in ord_addr_list:
                     print(f"[{addr[0]}] {addr[1]}: {watch_str(addr[1], ori_value_width)}")
             __str_refresher()
         case "i32":
             @__refresher(refresh, refresh_time)
             def __i32_refresher():
-                for addr in temp_addr_list:
+                for addr in ord_addr_list:
                     print(f"[{addr[0]}] {addr[1]}: {watch_i32(addr[1])}")
             __i32_refresher()
         case "u32":
             @__refresher(refresh, refresh_time)
             def __u32_refresher():
-                for addr in temp_addr_list:
+                for addr in ord_addr_list:
                     print(f"[{addr[0]}] {addr[1]}: {watch_u32(addr[1])}")
             __u32_refresher()
         case "i64":
             @__refresher(refresh, refresh_time)
             def __i64_refresher():
-                for addr in temp_addr_list:
+                for addr in ord_addr_list:
                     print(f"[{addr[0]}] {addr[1]}: {watch_i64(addr[1])}")
             __i64_refresher()
         case "u64":
             @__refresher(refresh, refresh_time)
             def __u64_refresher():
-                for addr in temp_addr_list:
+                for addr in ord_addr_list:
                     print(f"[{addr[0]}] {addr[1]}: {watch_u64(addr[1])}")
             __u64_refresher()
         case "f32":
             @__refresher(refresh, refresh_time)
             def __f32_refresher():
-                for addr in temp_addr_list:
+                for addr in ord_addr_list:
                     print(f"[{addr[0]}] {addr[1]}: {watch_f32(addr[1])}")
             __f32_refresher()
         case "f64":
             @__refresher(refresh, refresh_time)
             def __f64_refresher():
-                for addr in temp_addr_list:
+                for addr in ord_addr_list:
                     print(f"[{addr[0]}] {addr[1]}: {watch_f64(addr[1])}")
             __f64_refresher()
         case _:
@@ -536,15 +530,12 @@ def parse_delete(ori_value_info: dict, command: list[str]) -> bool:
     if len(command) != 2:
         print("`delete` command must accept 1 argv.", file=sys.stderr)
         return FAILURE
-    try:
-        temp_addr_number = int(command[1])
-    except ValueError:
-        print("`delete` command must accept a number from the list.", file=sys.stderr)
+    if (number := __trans_int(command[1], "`delete` command must accept a number from the list.")):
         return FAILURE
-    if temp_addr_number > len(addr_list) - 1 or temp_addr_number < 0:
-        print(f"{temp_addr_number} is out of addr_list, use `list` to checkout.", file=sys.stderr)
+    if number > len(addr_list) - 1 or number < 0:
+        print(f"{number} is out of addr_list, use `list` to checkout.", file=sys.stderr)
         return FAILURE
-    print(f"[{temp_addr_number}] {addr_list.pop(temp_addr_number)} has been deleted.")
+    print(f"[{number}] {addr_list.pop(number)} has been deleted.")
     ori_value_info["value"] = ori_value
     ori_value_info["type"] = value_type
     ori_value_info["width"] = ori_value_width
@@ -724,6 +715,7 @@ def parse_command(pid, addr_maps):
             if not parse_delete(ori_value_info ,command):
                 continue
 
+            # TODO: 省略类型搜索符，改用类型设置搜索
         elif command[0] in SEARCH_COMMAND:
             if not parse_search(ori_value_info, command):
                 continue
