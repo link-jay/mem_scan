@@ -219,7 +219,7 @@ def print_help():
         "- list: \tList the address(es) which was/were found in search command.",
         "- watch: \tView values in the addresses list. Accepts no arguments to view all list values, or a number to view a specific value. You can monitor values in real time by appending a `[/[time]]` parameter (default: 2 seconds).",
         "- delete: \tDelete the `number` addr of list.",
-        "- set: \t\tModify value(s) which was/were search command.",
+        "- set: \t\tModify values in the addresses list. You can modify values continuously by appending a `[/[time]]` parameter (default: 1 seconds).",
         "- sh:\t\tRun a shell command temply.",
         "- help: \tPrint this message.",
     ]
@@ -255,18 +255,19 @@ def __trans_float(argv: str, exp: str) -> float|bool:
         return FAILURE
     return value
 
+def __check_lenght(v_type, command) -> bool:
+    if len(command) != 2:
+        print(f"`{v_type}` command must accept 1 num argument.", file=sys.stderr)
+        return FAILURE
+    else:
+        return SUCCESS
+
 SEARCH_COMMAND = ["str", "i32", "i64", "u32", "u64", "f32", "f64"]
 def parse_search(ori_value_info: dict, command: list[str]) -> bool:
     ori_value: str|int|float = ori_value_info["value"]
     value_type: str = ori_value_info["type"]
     ori_value_width: int = ori_value_info["width"]
     addr_list: list[str] = ori_value_info["addr_list"]
-    def __check_lenght(v_type) -> bool:
-        if len(command) != 2:
-            print(f"`{v_type}` command must accept 1 num argument.", file=sys.stderr)
-            return FAILURE
-        else:
-            return SUCCESS
     match command[0]:
         case "str":
             if len(command) < 2:
@@ -277,7 +278,7 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
             ori_value_width = len(bytes(ori_value, "utf-8"))
             addr_list  = search_str(addr_maps, ori_value)
         case "i32":
-            if not __check_lenght(value_type):
+            if not __check_lenght(value_type, command):
                 return FAILURE
             if not (ori_value := __trans_int(command[1], "`i32` command must accept a num value.")) and ori_value != 0:
                 return FAILURE
@@ -288,7 +289,7 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
             ori_value_width = 4
             addr_list  = search_i32(addr_maps, ori_value)
         case "u32":
-            if not __check_lenght(value_type):
+            if not __check_lenght(value_type, command):
                 return FAILURE
             if not (ori_value := __trans_int(command[1], "`u32` command must accept a num value.")) and ori_value != 0:
                 return FAILURE
@@ -299,7 +300,7 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
             ori_value_width = 4
             addr_list  = search_u32(addr_maps, ori_value)
         case "i64":
-            if not __check_lenght(value_type):
+            if not __check_lenght(value_type, command):
                 return FAILURE
             if not (ori_value := __trans_int(command[1], "`i64` command must accept a num value.")) and ori_value != 0:
                 return FAILURE
@@ -310,7 +311,7 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
             ori_value_width = 8
             addr_list  = search_i64(addr_maps, ori_value)
         case "u64":
-            if not __check_lenght(value_type):
+            if not __check_lenght(value_type, command):
                 return FAILURE
             if not (ori_value := __trans_int(command[1], "`u64` command must accept a num value.")) and ori_value != 0:
                 return FAILURE
@@ -321,7 +322,7 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
             ori_value_width = 8
             addr_list  = search_u64(addr_maps, ori_value)
         case "f32":
-            if not __check_lenght(value_type):
+            if not __check_lenght(value_type, command):
                 return FAILURE
             if not (ori_value := __trans_float(command[1], "`f32` command must accept a num value.")) and ori_value != 0:
                 return FAILURE
@@ -333,7 +334,7 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
             ori_value_width = 4
             addr_list  = search_f32(addr_maps, ori_value)
         case "f64":
-            if not __check_lenght(value_type):
+            if not __check_lenght(value_type, command):
                 return FAILURE
             if not (ori_value := __trans_float(command[1], "`f64` command must accept a num value.")) and ori_value != 0:
                 return FAILURE
@@ -414,6 +415,19 @@ def parse_again(ori_value_info: dict, command: list[str]) -> bool:
     ori_value_info["addr_list"] = addr_list
     return SUCCESS
 
+def __refresher(refresh: bool, refresh_time: int):
+    def wrapper(func):
+        def inner():
+            while True:
+                try:
+                    func()
+                    if not refresh: break
+                    time.sleep(refresh_time)
+                except KeyboardInterrupt:
+                    print(); break
+        return inner
+    return wrapper
+
 def parse_watch(ori_value_info: dict, command: list[str]) -> bool:
     ori_value: str|int|float = ori_value_info["value"]
     value_type: str = ori_value_info["type"]
@@ -459,57 +473,48 @@ def parse_watch(ori_value_info: dict, command: list[str]) -> bool:
     elif len(command) > 2:
         print("`watch` get too much args. Please checkout.", file=sys.stderr)
         return FAILURE
-    def __refresher(func):
-        def wrapper():
-            while True:
-                try:
-                    func()
-                    if not refresh: break
-                    time.sleep(refresh_time)
-                except KeyboardInterrupt:
-                    print(); break
-        return wrapper
-    # __str_refresher = __refresher(__str_refresher) -> wrapper
-    # __str_refresher() -> wrapper() ->...func()...
+    # __refresher(refresh, refresh_time) -> wrapper
+    # __str_refresher = wrapper(__str_refresher) -> inner
+    # __str_refresher() -> inner()
     match value_type:
         case "str":
-            @__refresher
+            @__refresher(refresh, refresh_time)
             def __str_refresher():
                 for addr in temp_addr_list:
                     print(f"[{addr[0]}] {addr[1]}: {watch_str(addr[1], ori_value_width)}")
             __str_refresher()
         case "i32":
-            @__refresher
+            @__refresher(refresh, refresh_time)
             def __i32_refresher():
                 for addr in temp_addr_list:
                     print(f"[{addr[0]}] {addr[1]}: {watch_i32(addr[1])}")
             __i32_refresher()
         case "u32":
-            @__refresher
+            @__refresher(refresh, refresh_time)
             def __u32_refresher():
                 for addr in temp_addr_list:
                     print(f"[{addr[0]}] {addr[1]}: {watch_u32(addr[1])}")
             __u32_refresher()
         case "i64":
-            @__refresher
+            @__refresher(refresh, refresh_time)
             def __i64_refresher():
                 for addr in temp_addr_list:
                     print(f"[{addr[0]}] {addr[1]}: {watch_i64(addr[1])}")
             __i64_refresher()
         case "u64":
-            @__refresher
+            @__refresher(refresh, refresh_time)
             def __u64_refresher():
                 for addr in temp_addr_list:
                     print(f"[{addr[0]}] {addr[1]}: {watch_u64(addr[1])}")
             __u64_refresher()
         case "f32":
-            @__refresher
+            @__refresher(refresh, refresh_time)
             def __f32_refresher():
                 for addr in temp_addr_list:
                     print(f"[{addr[0]}] {addr[1]}: {watch_f32(addr[1])}")
             __f32_refresher()
         case "f64":
-            @__refresher
+            @__refresher(refresh, refresh_time)
             def __f64_refresher():
                 for addr in temp_addr_list:
                     print(f"[{addr[0]}] {addr[1]}: {watch_f64(addr[1])}")
@@ -558,21 +563,44 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
     if len(command) < 2:
         print("Please input a value to modify.", file=sys.stderr)
         return FAILURE
+    set_arg_value = " ".join(command[1:]).split("/")
+    refresh = False
+    refresh_time = 1
+    if len(set_arg_value) == 2:
+        refresh = True
+        if set_arg_value[1]:
+            if not (refresh_time := __trans_int(set_arg_value[1], "Refresh_time must be a num value.")):
+                return FAILURE
+    elif len(set_arg_value) > 2:
+        print("`set` get too much args. Please checkout.", file=sys.stderr)
+        return FAILURE
     match value_type:
         case "str":
             mod_value = " ".join(command[1:])
             if len(bytes(mod_value, "utf-8")) > ori_value_width:
                 print("Length of string value should not be longer than original.", file=sys.stderr)
                 return FAILURE
-            modify_str(addr_list, mod_value)
+            @__refresher(refresh, refresh_time)
+            def __modify_str():
+                modify_str(addr_list, mod_value)
+                print(f"Set value to {mod_value}.")
+            __modify_str()
         case "i32":
+            if not __check_lenght(value_type, command):
+                return FAILURE
             if not (mod_value := __trans_int(command[1], "`i32` type must accept a num value.")) and mod_value != 0:
                 return FAILURE
             if mod_value > MAX_I32 or mod_value < -MAX_I32:
                 print("`i32` type do not accept a num value more than 4 bytes, please use `i64`.", file=sys.stderr)
                 return FAILURE
-            modify_i32(addr_list, mod_value)
+            @__refresher(refresh, refresh_time)
+            def __modify_i32():
+                modify_i32(addr_list, mod_value)
+                print(f"Set value to {mod_value}")
+            __modify_i32()
         case "u32":
+            if not __check_lenght(value_type, command):
+                return FAILURE
             if not (mod_value := __trans_int(command[1], "`u32` type must accept a num value.")) and mod_value != 0:
                 return FAILURE
             if mod_value > MAX_I32 or mod_value < -MAX_I32:
@@ -581,37 +609,65 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
             if mod_value > MAX_U32 or mod_value < 0:
                 print("`u32` type do not accept a num value more than 4 bytes, please use `u64`. Or negative num value for i32", file=sys.stderr)
                 return FAILURE
-            modify_u32(addr_list, mod_value)
+            @__refresher(refresh, refresh_time)
+            def __modify_u32():
+                modify_u32(addr_list, mod_value)
+                print(f"Set value to {mod_value}")
+            __modify_u32()
         case "i64":
+            if not __check_lenght(value_type, command):
+                return FAILURE
             if not (mod_value := __trans_int(command[1], "`i64` type must accept a num value.")) and mod_value != 0:
                 return FAILURE
             if mod_value > MAX_I64 or mod_value < -MAX_I64:
                 print("`i64` tyep do not accept a num value more than 8 bytes.", file=sys.stderr)
                 return FAILURE
-            modify_i64(addr_list, mod_value)
+            @__refresher(refresh, refresh_time)
+            def __modify_i64():
+                modify_i64(addr_list, mod_value)
+                print(f"Set value to {mod_value}")
+            __modify_i64()
         case "u64":
+            if not __check_lenght(value_type, command):
+                return FAILURE
             if not (mod_value := __trans_int(command[1], "`u64` type must accept a num value.")) and mod_value != 0:
                 return FAILURE
             if mod_value > MAX_U64 or mod_value < 0:
                 print("`u64` type do not accept a num value more than 8 bytes or negative num value.", file=sys.stderr)
                 return FAILURE
+            @__refresher(refresh, refresh_time)
+            def __modify_u64():
+                print(f"Set value to {mod_value}")
+            __modify_u64()
             modify_u64(addr_list, mod_value)
         case "f32":
+            if not __check_lenght(value_type, command):
+                return FAILURE
             if not (mod_value := __trans_float(command[1], "`f32` type must accept a num value.")) and mod_value != 0:
                 return FAILURE
             if (mod_value > MAX_F32 or mod_value < -MAX_F32
                 or -MIN_F32 < mod_value < 0 or 0 < mod_value < MIN_F32):
                 print("`f32` type do not accept a num value more than 4 bytes.", file=sys.stderr)
                 return FAILURE
-            modify_f32(addr_list, mod_value)
+            @__refresher(refresh, refresh_time)
+            def __modify_f32():
+                modify_f32(addr_list, mod_value)
+                print(f"Set value to {mod_value}")
+            __modify_f32()
         case "f64":
+            if not __check_lenght(value_type, command):
+                return FAILURE
             if not (mod_value := __trans_float(command[1], "`f32` type must accept a num value.")) and mod_value:
                 return FAILURE
             if (mod_value > MAX_F64 or mod_value < -MAX_F64
                 or -MIN_F64 < mod_value < 0 or 0 < mod_value < MIN_F64):
                 print("`f64` type do not accept a num value more than 8 bytes.", file=sys.stderr)
                 return FAILURE
-            modify_f64(addr_list, mod_value)
+            @__refresher(refresh, refresh_time)
+            def __modify_f64():
+                modify_f64(addr_list, mod_value)
+                print(f"Set value to {mod_value}")
+            __modify_f64()
         case _:
             DEBUG(f"set `{value_type}` have not achieved.",
                   "Here should not be arrived.")
