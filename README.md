@@ -15,8 +15,8 @@ It supports search command like `int`/`str` to locate addresses. The non-search 
 * [ ] condition search
 * [x] delete addr
 * [x] check value
-* [ ] modify value continuously
-* [x] monitor value continueously
+* [x] modify value continuously
+* [x] monitor value continuously
 * [x] support shell command
 
 ## Command
@@ -34,7 +34,7 @@ It supports search command like `int`/`str` to locate addresses. The non-search 
 `list`: List the addresses found in search command.  
 `watch [[number][/[time]]]`: View values in the addresses list. Accepts no arguments to view all list values, or a number to view a specific value. You can monitor values in real time by appending a `[/[time]]` parameter (default: 2 seconds).  
 `delete number`: Delete the `number` addr of list.  
-`set value`: Modify the values in the `list`.  
+`set value[/[time]]`: Modify values in the addresses list. You can modify values continuously by appending a `[/[time]]` parameter (default: 1 seconds).  
 
 ## Example
 
