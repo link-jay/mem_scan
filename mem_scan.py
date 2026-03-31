@@ -39,8 +39,7 @@ def get_maps(pid: str) -> list[tuple[int, int]]:
             addr_maps.append((start, end))
     return addr_maps
             
-# TODO: 尝试4/其他字节作为步长
-def search_target(addr_maps: list[tuple[int, int]], target_value: bytes) -> list[str]:
+def search_target(addr_maps: list[tuple[int, int]], target_value: bytes, step: int) -> list[str]:
     addr_list: list[str] = []
     with open("/proc/"+pid+"/mem", "rb") as mem:
         for addr_map in addr_maps:
@@ -62,31 +61,31 @@ def search_target(addr_maps: list[tuple[int, int]], target_value: bytes) -> list
 
 def search_str(addr_maps: list[tuple[int, int]], target_value: str) -> list[str]:
     b_value = bytes(target_value, "utf-8")
-    return search_target(addr_maps, b_value)
+    return search_target(addr_maps, b_value, len(b_value))
 
 def search_i32(addr_maps: list[tuple[int, int]], target_value: int) -> list[str]:
     b_value = target_value.to_bytes(4, "little", signed=True)
-    return search_target(addr_maps, b_value)
+    return search_target(addr_maps, b_value, 4)
 
 def search_u32(addr_maps: list[tuple[int, int]], target_value: int) -> list[str]:
     b_value = target_value.to_bytes(4, "little")
-    return search_target(addr_maps, b_value)
+    return search_target(addr_maps, b_value, 4)
     
 def search_i64(addr_maps: list[tuple[int, int]], target_value: int) -> list[str]:
     b_value = target_value.to_bytes(8, "little", signed=True)
-    return search_target(addr_maps, b_value)
+    return search_target(addr_maps, b_value, 8)
 
 def search_u64(addr_maps: list[tuple[int, int]], target_value: int) -> list[str]:
     b_value = target_value.to_bytes(8, "little")
-    return search_target(addr_maps, b_value)
+    return search_target(addr_maps, b_value, 8)
 
 def search_f32(addr_maps: list[tuple[int, int]], target_value: float) -> list[str]:
     b_value = struct.pack("<f", target_value)
-    return search_target(addr_maps, b_value)
+    return search_target(addr_maps, b_value, 4)
 
 def search_f64(addr_maps: list[tuple[int, int]], target_value: float) -> list[str]:
     b_value = struct.pack("<d", target_value)
-    return search_target(addr_maps, b_value)
+    return search_target(addr_maps, b_value, 8)
 
 def search_again(pid: str, addr_list: list[str], new_value: bytes, value_width: int) -> list[str]:
     new_addr_list = []
@@ -573,8 +572,8 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
                 return FAILURE
             @__refresher(refresh, refresh_time)
             def __modify_str():
-                modify_str(addr_list, mod_value)
                 print(f"Set value to {mod_value}.")
+                modify_str(addr_list, mod_value)
             __modify_str()
         case "i32":
             if not __check_lenght(value_type, command):
@@ -586,8 +585,8 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
                 return FAILURE
             @__refresher(refresh, refresh_time)
             def __modify_i32():
-                modify_i32(addr_list, mod_value)
                 print(f"Set value to {mod_value}")
+                modify_i32(addr_list, mod_value)
             __modify_i32()
         case "u32":
             if not __check_lenght(value_type, command):
@@ -602,8 +601,8 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
                 return FAILURE
             @__refresher(refresh, refresh_time)
             def __modify_u32():
-                modify_u32(addr_list, mod_value)
                 print(f"Set value to {mod_value}")
+                modify_u32(addr_list, mod_value)
             __modify_u32()
         case "i64":
             if not __check_lenght(value_type, command):
@@ -615,8 +614,8 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
                 return FAILURE
             @__refresher(refresh, refresh_time)
             def __modify_i64():
-                modify_i64(addr_list, mod_value)
                 print(f"Set value to {mod_value}")
+                modify_i64(addr_list, mod_value)
             __modify_i64()
         case "u64":
             if not __check_lenght(value_type, command):
@@ -642,8 +641,8 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
                 return FAILURE
             @__refresher(refresh, refresh_time)
             def __modify_f32():
-                modify_f32(addr_list, mod_value)
                 print(f"Set value to {mod_value}")
+                modify_f32(addr_list, mod_value)
             __modify_f32()
         case "f64":
             if not __check_lenght(value_type, command):
@@ -656,8 +655,8 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
                 return FAILURE
             @__refresher(refresh, refresh_time)
             def __modify_f64():
-                modify_f64(addr_list, mod_value)
                 print(f"Set value to {mod_value}")
+                modify_f64(addr_list, mod_value)
             __modify_f64()
         case _:
             DEBUG(f"set `{value_type}` have not achieved.",
