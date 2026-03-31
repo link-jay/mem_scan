@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-# TODO: 合并int类，float类操作
 # TODO: 修缮反馈文本
 import sys
 import time
@@ -10,7 +9,7 @@ import subprocess
 import signal
 from typing import Any
 
-DEBUG_V = True
+DEBUG_V = False
 def DEBUG(debug_warning: str, run_warning: str):
     if DEBUG_V:
         assert False, debug_warning
@@ -280,7 +279,7 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
         case "i32":
             if not __check_lenght(value_type):
                 return FAILURE
-            if not (ori_value := __trans_int(command[1], "`i32` command must accept a num value.")):
+            if not (ori_value := __trans_int(command[1], "`i32` command must accept a num value.")) and ori_value != 0:
                 return FAILURE
             if ori_value > MAX_I32 or ori_value < -MAX_I32:
                 print("`i32` command do not accept a num value more than 4 bytes, please use `i64`.", file=sys.stderr)
@@ -291,7 +290,7 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
         case "u32":
             if not __check_lenght(value_type):
                 return FAILURE
-            if not (ori_value := __trans_int(command[1], "`u32` command must accept a num value.")):
+            if not (ori_value := __trans_int(command[1], "`u32` command must accept a num value.")) and ori_value != 0:
                 return FAILURE
             if ori_value > MAX_U32 or ori_value < 0:
                 print("`u32` command do not accept a num value more than 4 bytes, please use `u64`. Or negative num value for int", file=sys.stderr)
@@ -302,7 +301,7 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
         case "i64":
             if not __check_lenght(value_type):
                 return FAILURE
-            if not (ori_value := __trans_int(command[1], "`i64` command must accept a num value.")):
+            if not (ori_value := __trans_int(command[1], "`i64` command must accept a num value.")) and ori_value != 0:
                 return FAILURE
             if ori_value > MAX_I64 or ori_value < -MAX_I64:
                 print("`i64` command do not accept a num value more than 8 bytes.", file=sys.stderr)
@@ -313,7 +312,7 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
         case "u64":
             if not __check_lenght(value_type):
                 return FAILURE
-            if not (ori_value := __trans_int(command[1], "`u64` command must accept a num value.")):
+            if not (ori_value := __trans_int(command[1], "`u64` command must accept a num value.")) and ori_value != 0:
                 return FAILURE
             if ori_value > MAX_U64 or ori_value < 0:
                 print("`u64` command do not accept a num value more than 8 bytes or negative num value.", file=sys.stderr)
@@ -324,7 +323,7 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
         case "f32":
             if not __check_lenght(value_type):
                 return FAILURE
-            if not (ori_value := __trans_float(command[1], "`f32` command must accept a num value.")):
+            if not (ori_value := __trans_float(command[1], "`f32` command must accept a num value.")) and ori_value != 0:
                 return FAILURE
             if (ori_value > MAX_F32 or ori_value < -MAX_F32
                 or -MIN_F32 < ori_value < 0 or 0 < ori_value < MIN_F32):
@@ -336,7 +335,7 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
         case "f64":
             if not __check_lenght(value_type):
                 return FAILURE
-            if not (ori_value := __trans_float(command[1], "`f64` command must accept a num value.")):
+            if not (ori_value := __trans_float(command[1], "`f64` command must accept a num value.")) and ori_value != 0:
                 return FAILURE
             if (ori_value > MAX_F64 or ori_value < -MAX_F64
                 or -MIN_F64 < ori_value < 0 or 0 < ori_value < MIN_F64):
@@ -567,14 +566,14 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
                 return FAILURE
             modify_str(addr_list, mod_value)
         case "i32":
-            if not (mod_value := __trans_int(command[1], "`i32` type must accept a num value.")):
+            if not (mod_value := __trans_int(command[1], "`i32` type must accept a num value.")) and mod_value != 0:
                 return FAILURE
             if mod_value > MAX_I32 or mod_value < -MAX_I32:
                 print("`i32` type do not accept a num value more than 4 bytes, please use `i64`.", file=sys.stderr)
                 return FAILURE
             modify_i32(addr_list, mod_value)
         case "u32":
-            if not (mod_value := __trans_int(command[1], "`u32` type must accept a num value.")):
+            if not (mod_value := __trans_int(command[1], "`u32` type must accept a num value.")) and mod_value != 0:
                 return FAILURE
             if mod_value > MAX_I32 or mod_value < -MAX_I32:
                 print("`i32` type do not accept a num value more than 4 bytes, please use `i64`.", file=sys.stderr)
@@ -584,21 +583,21 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
                 return FAILURE
             modify_u32(addr_list, mod_value)
         case "i64":
-            if not (mod_value := __trans_int(command[1], "`i64` type must accept a num value.")):
+            if not (mod_value := __trans_int(command[1], "`i64` type must accept a num value.")) and mod_value != 0:
                 return FAILURE
             if mod_value > MAX_I64 or mod_value < -MAX_I64:
                 print("`i64` tyep do not accept a num value more than 8 bytes.", file=sys.stderr)
                 return FAILURE
             modify_i64(addr_list, mod_value)
         case "u64":
-            if not (mod_value := __trans_int(command[1], "`u64` type must accept a num value.")):
+            if not (mod_value := __trans_int(command[1], "`u64` type must accept a num value.")) and mod_value != 0:
                 return FAILURE
             if mod_value > MAX_U64 or mod_value < 0:
                 print("`u64` type do not accept a num value more than 8 bytes or negative num value.", file=sys.stderr)
                 return FAILURE
             modify_u64(addr_list, mod_value)
         case "f32":
-            if not (mod_value := __trans_float(command[1], "`f32` type must accept a num value.")):
+            if not (mod_value := __trans_float(command[1], "`f32` type must accept a num value.")) and mod_value != 0:
                 return FAILURE
             if (mod_value > MAX_F32 or mod_value < -MAX_F32
                 or -MIN_F32 < mod_value < 0 or 0 < mod_value < MIN_F32):
@@ -606,7 +605,7 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
                 return FAILURE
             modify_f32(addr_list, mod_value)
         case "f64":
-            if not (mod_value := __trans_float(command[1], "`f32` type must accept a num value.")):
+            if not (mod_value := __trans_float(command[1], "`f32` type must accept a num value.")) and mod_value:
                 return FAILURE
             if (mod_value > MAX_F64 or mod_value < -MAX_F64
                 or -MIN_F64 < mod_value < 0 or 0 < mod_value < MIN_F64):
