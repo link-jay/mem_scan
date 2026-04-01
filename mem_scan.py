@@ -414,7 +414,7 @@ def parse_again(ori_value_info: dict, command: list[str]) -> bool:
     ori_value_info["addr_list"] = addr_list
     return SUCCESS
 
-def __refresher(refresh: bool, refresh_time: int):
+def __refresher(refresh: bool, refresh_time: float):
     def wrapper(func):
         def inner():
             while True:
@@ -437,7 +437,7 @@ def parse_watch(ori_value_info: dict, command: list[str]) -> bool:
         return FAILURE
     ord_addr_list: list[tuple[int, str]]|bool = list(enumerate(addr_list))
     refresh = False
-    refresh_time = 2
+    refresh_time = 2.0
     if len(command) == 2:
         watch_arg_value = command[1].split("/")
         # watch 1 || watch 1/ || watch /78 || watch /
@@ -455,7 +455,7 @@ def parse_watch(ori_value_info: dict, command: list[str]) -> bool:
             if watch_arg_value[0]:
                 if not (ord_addr_list := __get_single_addr()): return FAILURE
             if watch_arg_value[1]:
-                if (refresh_time := __trans_int(watch_arg_value[1], "refresh time of `watch` must accept a num value.")):
+                if (refresh_time := __trans_float(watch_arg_value[1], "refresh time of `watch` must accept a num value.")):
                     return FAILURE
                 if refresh_time < 0:
                     print(f"refresh time of `watch` should not be negative.", file=sys.stderr)
@@ -555,11 +555,11 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
         return FAILURE
     set_arg_value = " ".join(command[1:]).split("/")
     refresh = False
-    refresh_time = 1
+    refresh_time = 1.0
     if len(set_arg_value) == 2:
         refresh = True
         if set_arg_value[1]:
-            if not (refresh_time := __trans_int(set_arg_value[1], "Refresh_time must be a num value.")):
+            if not (refresh_time := __trans_float(set_arg_value[1], "Refresh_time must be a num value.")):
                 return FAILURE
     elif len(set_arg_value) > 2:
         print("`set` get too much args. Please checkout.", file=sys.stderr)
