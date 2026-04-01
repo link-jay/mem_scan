@@ -279,7 +279,8 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
         case "i32":
             if not __check_lenght(value_type, command):
                 return FAILURE
-            if not (ori_value := __trans_int(command[1], "`i32` command must accept a num value.")) and ori_value != 0:
+            if not (ori_value := __trans_int(command[1], "`i32` command must accept a num value.")) and (
+            isinstance(ori_value, bool)):
                 return FAILURE
             if ori_value > MAX_I32 or ori_value < -MAX_I32:
                 print("`i32` command do not accept a num value more than 4 bytes, please use `i64`.", file=sys.stderr)
@@ -290,7 +291,8 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
         case "u32":
             if not __check_lenght(value_type, command):
                 return FAILURE
-            if not (ori_value := __trans_int(command[1], "`u32` command must accept a num value.")) and ori_value != 0:
+            if not (ori_value := __trans_int(command[1], "`u32` command must accept a num value.")) and (
+            isinstance(ori_value, bool)):
                 return FAILURE
             if ori_value > MAX_U32 or ori_value < 0:
                 print("`u32` command do not accept a num value more than 4 bytes, please use `u64`. Or negative num value for int", file=sys.stderr)
@@ -301,7 +303,8 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
         case "i64":
             if not __check_lenght(value_type, command):
                 return FAILURE
-            if not (ori_value := __trans_int(command[1], "`i64` command must accept a num value.")) and ori_value != 0:
+            if not (ori_value := __trans_int(command[1], "`i64` command must accept a num value.")) and (
+            isinstance(ori_value, bool)):
                 return FAILURE
             if ori_value > MAX_I64 or ori_value < -MAX_I64:
                 print("`i64` command do not accept a num value more than 8 bytes.", file=sys.stderr)
@@ -312,7 +315,8 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
         case "u64":
             if not __check_lenght(value_type, command):
                 return FAILURE
-            if not (ori_value := __trans_int(command[1], "`u64` command must accept a num value.")) and ori_value != 0:
+            if not (ori_value := __trans_int(command[1], "`u64` command must accept a num value.")) and (
+            isinstance(ori_value, bool)):
                 return FAILURE
             if ori_value > MAX_U64 or ori_value < 0:
                 print("`u64` command do not accept a num value more than 8 bytes or negative num value.", file=sys.stderr)
@@ -323,7 +327,8 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
         case "f32":
             if not __check_lenght(value_type, command):
                 return FAILURE
-            if not (ori_value := __trans_float(command[1], "`f32` command must accept a num value.")) and ori_value != 0:
+            if not (ori_value := __trans_float(command[1], "`f32` command must accept a num value.")) and (
+            isinstance(ori_value, bool)):
                 return FAILURE
             if (ori_value > MAX_F32 or ori_value < -MAX_F32
                 or -MIN_F32 < ori_value < 0 or 0 < ori_value < MIN_F32):
@@ -335,7 +340,8 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
         case "f64":
             if not __check_lenght(value_type, command):
                 return FAILURE
-            if not (ori_value := __trans_float(command[1], "`f64` command must accept a num value.")) and ori_value != 0:
+            if not (ori_value := __trans_float(command[1], "`f64` command must accept a num value.")) and (
+            isinstance(ori_value, bool)):
                 return FAILURE
             if (ori_value > MAX_F64 or ori_value < -MAX_F64
                 or -MIN_F64 < ori_value < 0 or 0 < ori_value < MIN_F64):
@@ -370,37 +376,43 @@ def parse_again(ori_value_info: dict, command: list[str]) -> bool:
             addr_list = search_again(pid, addr_list, new_value, ori_value_width)
         case "i32":
             if len(command) > 2: print("`i32` type must accept 1 num argument.", file=sys.stderr)
-            if not (new_value := __trans_int(command[1], "`i32` type must accept 1 num value.")):
+            if not (new_value := __trans_int(command[1], "`i32` type must accept 1 num value.")) and (
+            isinstance(new_value, bool)):
                 return FAILURE
             ori_value = new_value
             addr_list = search_i32_again(pid, addr_list, new_value)
         case "u32":
             if len(command) > 2: print("`u32` type must accept 1 num argument or none.", file=sys.stderr)
-            if not (new_value := __trans_int(command[1], "`u32` type must accept 1 num value.")):
+            if not (new_value := __trans_int(command[1], "`u32` type must accept 1 num value.")) and (
+            isinstance(new_value, bool)):
                 return FAILURE
             ori_value = new_value
             addr_list = search_u32_again(pid, addr_list, new_value)
         case "i64":
             if len(command) > 2: print("`i64` type must accept 1 num argument or none.", file=sys.stderr)
-            if not (new_value := __trans_int(command[1], "`i64` type must accept 1 num value.")):
+            if not (new_value := __trans_int(command[1], "`i64` type must accept 1 num value.")) and (
+            isinstance(new_value, bool)):
                 return FAILURE
             ori_value = new_value
             addr_list = search_i64_again(pid, addr_list, new_value)
         case "u64":
             if len(command) > 2: print("`u64` type must accept 1 num argument or none.", file=sys.stderr)
-            if not (new_value := __trans_int(command[1], "`u64` type must accept 1 num value.")):
+            if not (new_value := __trans_int(command[1], "`u64` type must accept 1 num value.")) and (
+            isinstance(new_value, bool)):
                 return FAILURE
             ori_value = new_value
             addr_list = search_u64_again(pid, addr_list, new_value)
         case "f32":
             if len(command) > 2: print("`f32` type must accept 1 num argument or none.", file=sys.stderr)
-            if not (new_value := __trans_float(command[1], "`f32` type must accept 1 num value.")):
+            if not (new_value := __trans_float(command[1], "`f32` type must accept 1 num value.")) and (
+            isinstance(new_value, bool)):
                 return FAILURE
             ori_value = new_value
             addr_list = search_f32_again(pid, addr_list, new_value)
         case "f64":
             if len(command) > 2: print("`f64` type must accept 1 num argument or none.", file=sys.stderr)
-            if not (new_value := __trans_float(command[1], "`f64` type must accept 1 num value.")):
+            if not (new_value := __trans_float(command[1], "`f64` type must accept 1 num value.")) and (
+            isinstance(new_value, bool)):
                 return FAILURE
             ori_value = new_value
             addr_list = search_f64_again(pid, addr_list, new_value)
@@ -442,8 +454,9 @@ def parse_watch(ori_value_info: dict, command: list[str]) -> bool:
         watch_arg_value = command[1].split("/")
         # watch 1 || watch 1/ || watch /78 || watch /
         def __get_single_addr() -> list[tuple[int, str]]|bool:
-            if (number := __trans_int(watch_arg_value[0], "`watch` must accept a number from the list.")):
-                return FAILURE
+            if not (number := __trans_int(watch_arg_value[0], "`watch` must accept a number from the list.")) and (
+            isinstance(number, bool)):
+              return FAILURE
             if number > len(addr_list) - 1 or number < 0:
                 print(f"{number} is out of list, use `list` to checkout.", file=sys.stderr)
                 return FAILURE
@@ -455,7 +468,8 @@ def parse_watch(ori_value_info: dict, command: list[str]) -> bool:
             if watch_arg_value[0]:
                 if not (ord_addr_list := __get_single_addr()): return FAILURE
             if watch_arg_value[1]:
-                if (refresh_time := __trans_float(watch_arg_value[1], "refresh time of `watch` must accept a num value.")):
+                if not (refresh_time := __trans_float(watch_arg_value[1], "refresh time of `watch` must accept a num value.")) and (
+                isinstance(refresh_time, bool)):
                     return FAILURE
                 if refresh_time < 0:
                     print(f"refresh time of `watch` should not be negative.", file=sys.stderr)
@@ -529,7 +543,8 @@ def parse_delete(ori_value_info: dict, command: list[str]) -> bool:
     if len(command) != 2:
         print("`delete` command must accept 1 argv.", file=sys.stderr)
         return FAILURE
-    if (number := __trans_int(command[1], "`delete` command must accept a number from the list.")):
+    if (number := __trans_int(command[1], "`delete` command must accept a number from the list.")) and (
+    isinstance(number, bool)):
         return FAILURE
     if number > len(addr_list) - 1 or number < 0:
         print(f"{number} is out of addr_list, use `list` to checkout.", file=sys.stderr)
@@ -559,14 +574,15 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
     if len(set_arg_value) == 2:
         refresh = True
         if set_arg_value[1]:
-            if not (refresh_time := __trans_float(set_arg_value[1], "Refresh_time must be a num value.")):
+            if not (refresh_time := __trans_float(set_arg_value[1], "Refresh_time must be a num value.")) and (
+            isinstance(refresh_time, bool)):
                 return FAILURE
     elif len(set_arg_value) > 2:
         print("`set` get too much args. Please checkout.", file=sys.stderr)
         return FAILURE
     match value_type:
         case "str":
-            mod_value = " ".join(command[1:])
+            mod_value = set_arg_value[0]
             if len(bytes(mod_value, "utf-8")) > ori_value_width:
                 print("Length of string value should not be longer than original.", file=sys.stderr)
                 return FAILURE
@@ -578,7 +594,8 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
         case "i32":
             if not __check_lenght(value_type, command):
                 return FAILURE
-            if not (mod_value := __trans_int(command[1], "`i32` type must accept a num value.")) and mod_value != 0:
+            if not (mod_value := __trans_int(set_arg_value[0], "`i32` type must accept a num value.")) and (
+            isinstance(mod_value, bool)):
                 return FAILURE
             if mod_value > MAX_I32 or mod_value < -MAX_I32:
                 print("`i32` type do not accept a num value more than 4 bytes, please use `i64`.", file=sys.stderr)
@@ -591,7 +608,8 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
         case "u32":
             if not __check_lenght(value_type, command):
                 return FAILURE
-            if not (mod_value := __trans_int(command[1], "`u32` type must accept a num value.")) and mod_value != 0:
+            if not (mod_value := __trans_int(set_arg_value[0], "`u32` type must accept a num value.")) and (
+            isinstance(mod_value, bool)):
                 return FAILURE
             if mod_value > MAX_I32 or mod_value < -MAX_I32:
                 print("`i32` type do not accept a num value more than 4 bytes, please use `i64`.", file=sys.stderr)
@@ -607,7 +625,8 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
         case "i64":
             if not __check_lenght(value_type, command):
                 return FAILURE
-            if not (mod_value := __trans_int(command[1], "`i64` type must accept a num value.")) and mod_value != 0:
+            if not (mod_value := __trans_int(set_arg_value[0], "`i64` type must accept a num value.")) and (
+            isinstance(mod_value, bool)):
                 return FAILURE
             if mod_value > MAX_I64 or mod_value < -MAX_I64:
                 print("`i64` tyep do not accept a num value more than 8 bytes.", file=sys.stderr)
@@ -620,7 +639,8 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
         case "u64":
             if not __check_lenght(value_type, command):
                 return FAILURE
-            if not (mod_value := __trans_int(command[1], "`u64` type must accept a num value.")) and mod_value != 0:
+            if not (mod_value := __trans_int(set_arg_value[0], "`u64` type must accept a num value.")) and (
+            isinstance(mod_value, bool)):
                 return FAILURE
             if mod_value > MAX_U64 or mod_value < 0:
                 print("`u64` type do not accept a num value more than 8 bytes or negative num value.", file=sys.stderr)
@@ -633,7 +653,8 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
         case "f32":
             if not __check_lenght(value_type, command):
                 return FAILURE
-            if not (mod_value := __trans_float(command[1], "`f32` type must accept a num value.")) and mod_value != 0:
+            if not (mod_value := __trans_float(set_arg_value[0], "`f32` type must accept a num value.")) and (
+            isinstance(mod_value, bool)):
                 return FAILURE
             if (mod_value > MAX_F32 or mod_value < -MAX_F32
                 or -MIN_F32 < mod_value < 0 or 0 < mod_value < MIN_F32):
@@ -647,7 +668,8 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
         case "f64":
             if not __check_lenght(value_type, command):
                 return FAILURE
-            if not (mod_value := __trans_float(command[1], "`f32` type must accept a num value.")) and mod_value:
+            if not (mod_value := __trans_float(set_arg_value[0], "`f32` type must accept a num value.")) and (
+            isinstance(mod_value, bool)):
                 return FAILURE
             if (mod_value > MAX_F64 or mod_value < -MAX_F64
                 or -MIN_F64 < mod_value < 0 or 0 < mod_value < MIN_F64):
