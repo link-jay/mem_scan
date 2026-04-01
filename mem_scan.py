@@ -582,7 +582,7 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
         return FAILURE
     match value_type:
         case "str":
-            mod_value = " ".join(command[1:])
+            mod_value = set_arg_value[0]
             if len(bytes(mod_value, "utf-8")) > ori_value_width:
                 print("Length of string value should not be longer than original.", file=sys.stderr)
                 return FAILURE
@@ -594,7 +594,7 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
         case "i32":
             if not __check_lenght(value_type, command):
                 return FAILURE
-            if not (mod_value := __trans_int(command[1], "`i32` type must accept a num value.")) and (
+            if not (mod_value := __trans_int(set_arg_value[0], "`i32` type must accept a num value.")) and (
             isinstance(mod_value, bool)):
                 return FAILURE
             if mod_value > MAX_I32 or mod_value < -MAX_I32:
@@ -608,7 +608,7 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
         case "u32":
             if not __check_lenght(value_type, command):
                 return FAILURE
-            if not (mod_value := __trans_int(command[1], "`u32` type must accept a num value.")) and (
+            if not (mod_value := __trans_int(set_arg_value[0], "`u32` type must accept a num value.")) and (
             isinstance(mod_value, bool)):
                 return FAILURE
             if mod_value > MAX_I32 or mod_value < -MAX_I32:
@@ -625,7 +625,7 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
         case "i64":
             if not __check_lenght(value_type, command):
                 return FAILURE
-            if not (mod_value := __trans_int(command[1], "`i64` type must accept a num value.")) and (
+            if not (mod_value := __trans_int(set_arg_value[0], "`i64` type must accept a num value.")) and (
             isinstance(mod_value, bool)):
                 return FAILURE
             if mod_value > MAX_I64 or mod_value < -MAX_I64:
@@ -639,7 +639,7 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
         case "u64":
             if not __check_lenght(value_type, command):
                 return FAILURE
-            if not (mod_value := __trans_int(command[1], "`u64` type must accept a num value.")) and (
+            if not (mod_value := __trans_int(set_arg_value[0], "`u64` type must accept a num value.")) and (
             isinstance(mod_value, bool)):
                 return FAILURE
             if mod_value > MAX_U64 or mod_value < 0:
@@ -653,7 +653,7 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
         case "f32":
             if not __check_lenght(value_type, command):
                 return FAILURE
-            if not (mod_value := __trans_float(command[1], "`f32` type must accept a num value.")) and (
+            if not (mod_value := __trans_float(set_arg_value[0], "`f32` type must accept a num value.")) and (
             isinstance(mod_value, bool)):
                 return FAILURE
             if (mod_value > MAX_F32 or mod_value < -MAX_F32
@@ -668,7 +668,7 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
         case "f64":
             if not __check_lenght(value_type, command):
                 return FAILURE
-            if not (mod_value := __trans_float(command[1], "`f32` type must accept a num value.")) and (
+            if not (mod_value := __trans_float(set_arg_value[0], "`f32` type must accept a num value.")) and (
             isinstance(mod_value, bool)):
                 return FAILURE
             if (mod_value > MAX_F64 or mod_value < -MAX_F64
