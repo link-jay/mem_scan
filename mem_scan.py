@@ -205,21 +205,23 @@ def modify_f64(target_list: list[str], mod_value: float):
 def print_help():
     help_message = [
         "HELP MESSAGE:",
-        "- str: \t\tSearch string value in memory.",
-        "- i32: \t\tSearch signed 4 bytes int number value in memory.",
-        "- u32: \t\tSearch unsigned 4 bytes int number value in memory.",
-        "- i64: \t\tSearch signed 8 bytes int number value in memory.",
-        "- u64: \t\tSearch unsigned 8 bytes int number value in memory.",
-        "- f32: \t\tSearch 4 bytes float number value in memory.",
-        "- f64: \t\tSearch 8 bytes float number value in memory.",
-        "- again: \tSearch value again. It accepts 0 arg for search original value or 1 arg for search a new value with same type.",
-        "- list: \tList the address(es) which was/were found in search command.",
-        "- watch: \tView values in the addresses list. Accepts no arguments to view all list values, or a number to view a specific value. You can monitor values in real time by appending a `[/[time]]` parameter (default: 2 seconds).",
-        "- delete: \tDelete the `number` addr of list.",
-        "- set: \t\tModify values in the addresses list. You can modify values continuously by appending a `[/[time]]` parameter (default: 1 seconds).",
-        "- sh:\t\tRun a shell command temply.",
-        "- help: \tPrint this message.",
+        "- help: \tPrint help message.",
+        "- sh cmd: \tRun a shell command temporarily.",
+        "- type [i32|i64|u32|u64|f32|f64|str]`:",
+        "\t\tSet the value type for search (default: `i32`).",
+        "- str|num: \tSearch for the specified `str/num` value. Repeating is equivalent to using `=`.",
+        "- = [str|num]: \tSearch again using the last search result. No argument means search for the original value; a new `str/num` argument means search for the new value of the same type.",
+        "- >/< [str|num]:Search for values greater/less than the specified `num`. No argument means search relative to the original value. For `str`, these commands function the same as `!=`.",
+        "- !=: \t\tSearch for values not equal to the specified `str/num`. No argument means search relative to the original value.",
+        "- reset: \tReset the search results.",
+        "- list: \tList all addresses found by search commands.",
+        "-watch [[number][/[time]]]:",
+        "\t\tView values in the address list. No argument: view all values; a number: view the specified value. Append `/[time]` for real-time monitoring (default interval: 2 seconds).",
+        "- delete number:Delete the address at the specified index in the list.",
+        "- set value[/[time]]:",
+        "\t\tModify values in the address list. Append `/[time]` for continuous modification (default interval: 1 second).",
     ]
+
     for line in help_message:
         print(line)
 
@@ -691,21 +693,33 @@ def parse_command(pid, addr_maps):
                       f"UnkownType `{command[1]}`, only accept `i32/i64/u32/u64/f32/f64/str` type.")
 
         elif command[0] == "=":
+            if not ori_value_info["addr_list"]:
+                DEBUG(f"`{commadn[0]}` search for first time have not be achived.",
+                      "Please use search command first.")
             if not parse_cond(ori_value_info, command, lambda x,y: x == y):
                 continue
             list_addr(ori_value_info["addr_list"])
 
         elif command[0] == "!=":
+            if not ori_value_info["addr_list"]:
+                DEBUG(f"`{commadn[0]}` search for first time have not be achived.",
+                      "Please use search command first.")
             if not parse_cond(ori_value_info, command, lambda x,y: x != y):
                 continue
             list_addr(ori_value_info["addr_list"])
 
         elif command[0] == "<":
+            if not ori_value_info["addr_list"]:
+                DEBUG(f"`{commadn[0]}` search for first time have not be achived.",
+                      "Please use search command first.")
             if not parse_cond(ori_value_info, command, lambda x,y: x < y):
                 continue
             list_addr(ori_value_info["addr_list"])
 
         elif command[0] == ">":
+            if not ori_value_info["addr_list"]:
+                DEBUG(f"`{commadn[0]}` search for first time have not be achived.",
+                      "Please use search command first.")
             if not parse_cond(ori_value_info, command, lambda x,y: x > y):
                 continue
             list_addr(ori_value_info["addr_list"])
