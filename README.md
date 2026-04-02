@@ -4,7 +4,8 @@ Built on the Linux virtual memory system, the program implements its core functi
 It supports search command like `int`/`str` to locate addresses. The non-search command rely on the preceding search command to determine data type, which is recorded during the first search. Specially, the search command - `again` also depends on preceding explicit search command.
 
 ## Feature
-
+* [ ] memscan-like commands
+* [ ] choose align
 * [x] find and modify str
 * [ ] find and modify i8/i16
 * [ ] find and modify u8/u16

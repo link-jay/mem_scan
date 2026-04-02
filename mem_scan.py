@@ -7,6 +7,7 @@ import readline
 import struct
 import subprocess
 import signal
+from collections.abc import Callable
 from typing import Any
 
 DEBUG_V = False
@@ -27,6 +28,8 @@ MAX_F32 = (2 - 2**(-23)) * (2 ** 127)
 MIN_F32 = 2 ** -126
 MAX_F64 = sys.float_info.max
 MIN_F64 = sys.float_info.min
+EPS32     = 1e-3
+EPS64     = 1e-15
 
 def get_maps(pid: str) -> list[tuple[int, int]]:
     addr_maps: list[tuple] = []
@@ -87,42 +90,37 @@ def search_f64(addr_maps: list[tuple[int, int]], target_value: float) -> list[st
     b_value = struct.pack("<d", target_value)
     return search_target(addr_maps, b_value, 8)
 
-def search_again(pid: str, addr_list: list[str], new_value: bytes, value_width: int) -> list[str]:
+def __bytes_trans(value_type: str, b_value: bytes) -> Any:
+    normal_value: Any
+    match value_type:
+        case "str":
+            normal_value = b_value.decode("utf-8")
+        case "i32":
+            normal_value = int.from_bytes(b_value, "little", signed=True)
+        case "u32":
+            normal_value = int.from_bytes(b_value, "little")
+        case "i64":
+            normal_value = int.from_bytes(b_value, "little", signed=True)
+        case "u64":
+            normal_value = int.from_bytes(b_value, "little")
+        case "f32":
+            normal_value = struct.unpack("<f", b_value)[0]
+        case "f64":
+            normal_value = struct.unpack("<d", b_value)[0]
+    return normal_value
+    
+def search_cond(pid: str, new_value: Any, value_info: dict, op: Callable) -> list[str]:
     new_addr_list = []
     with open("/proc/"+pid+"/mem", "rb") as mem:
-        for addr in addr_list:
+        for addr in value_info["addr_list"]:
             try:
                 mem.seek(int(addr, 16))
-                if mem.read(value_width) == new_value:
+                mem_value = __bytes_trans(value_info["type"], mem.read(value_info["width"]))
+                if op(mem_value, new_value):
                     new_addr_list.append(addr)
             except OSError:
                 continue
-                    
     return new_addr_list
-
-def search_i32_again(pid: str, addr_list: list[str], new_value: int) -> list[str]:
-    b_value = new_value.to_bytes(4, "little", signed=True)
-    return search_again(pid, addr_list, b_value, 4)
-
-def search_u32_again(pid: str, addr_list: list[str], new_value: int) -> list[str]:
-    b_value = new_value.to_bytes(4, "little")
-    return search_again(pid, addr_list, b_value, 4)
-
-def search_i64_again(pid: str, addr_list: list[str], new_value: int) -> list[str]:
-    b_value = new_value.to_bytes(8, "little", signed=True)
-    return search_again(pid, addr_list, b_value, 8)
-
-def search_u64_again(pid: str, addr_list: list[str], new_value: int) -> list[str]:
-    b_value = new_value.to_bytes(8, "little")
-    return search_again(pid, addr_list, b_value, 8)
-
-def search_f32_again(pid: str, addr_list: list[str], new_value: float) -> list[str]:
-    b_value = struct.pack("<f", new_value)
-    return search_again(pid, addr_list, b_value, 4)
-
-def search_f64_again(pid: str, addr_list: list[str], new_value: float) -> list[str]:
-    b_value = struct.pack("<d", new_value)
-    return search_again(pid, addr_list, b_value, 8)
 
 def watch_value(addr: str, value_width: int) -> bytes:
     with open("/proc/"+pid+"/mem", "rb") as mem:
@@ -360,70 +358,72 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
     ori_value_info["addr_list"] = addr_list
     return SUCCESS
 
-def parse_again(ori_value_info: dict, command: list[str]) -> bool:
-    ori_value: str|int|float = ori_value_info["value"]
-    value_type: str = ori_value_info["type"]
-    ori_value_width: int = ori_value_info["width"]
-    addr_list: list[str] = ori_value_info["addr_list"]
+def parse_cond(ori_value_info: dict, command: list[str], op: Callable) -> bool:
     new_value: Any
     if len(command) == 1:
-        command.append(str(ori_value))
-    match value_type:
+        command.append(str(ori_value_info["value"]))
+    match ori_value_info["type"]:
         case "str":
-            ori_value = " ".join(command[1:])
-            new_value = bytes(ori_value, "utf-8")
-            ori_value_width  = len(new_value)
-            addr_list = search_again(pid, addr_list, new_value, ori_value_width)
+            ori_value_info["value"] = new_value = " ".join(command[1:])
+            ori_value_info["width"] = len(new_value)
+            if op(1, 1):
+                ori_value_info["addr_list"] = search_cond(pid, new_value, ori_value_info, lambda x,y: x == y)
+            else:
+                ori_value_info["addr_list"] = search_cond(pid, new_value, ori_value_info, lambda x,y: x != y)
         case "i32":
             if len(command) > 2: print("`i32` type must accept 1 num argument.", file=sys.stderr)
             if not (new_value := __trans_int(command[1], "`i32` type must accept 1 num value.")) and (
             isinstance(new_value, bool)):
                 return FAILURE
-            ori_value = new_value
-            addr_list = search_i32_again(pid, addr_list, new_value)
+            ori_value_info["value"] = new_value
+            ori_value_info["addr_list"] = search_cond(pid, new_value, ori_value_info, op)
         case "u32":
             if len(command) > 2: print("`u32` type must accept 1 num argument or none.", file=sys.stderr)
             if not (new_value := __trans_int(command[1], "`u32` type must accept 1 num value.")) and (
             isinstance(new_value, bool)):
                 return FAILURE
-            ori_value = new_value
-            addr_list = search_u32_again(pid, addr_list, new_value)
+            ori_value_info["value"] = new_value
+            ori_value_info["addr_list"] = search_cond(pid, new_value, ori_value_info, op)
         case "i64":
             if len(command) > 2: print("`i64` type must accept 1 num argument or none.", file=sys.stderr)
             if not (new_value := __trans_int(command[1], "`i64` type must accept 1 num value.")) and (
             isinstance(new_value, bool)):
                 return FAILURE
-            ori_value = new_value
-            addr_list = search_i64_again(pid, addr_list, new_value)
+            ori_value_info["value"] = new_value
+            ori_value_info["addr_list"] = search_cond(pid, new_value, ori_value_info, op)
         case "u64":
             if len(command) > 2: print("`u64` type must accept 1 num argument or none.", file=sys.stderr)
             if not (new_value := __trans_int(command[1], "`u64` type must accept 1 num value.")) and (
             isinstance(new_value, bool)):
                 return FAILURE
-            ori_value = new_value
-            addr_list = search_u64_again(pid, addr_list, new_value)
+            ori_value_info["value"] = new_value
+            ori_value_info["addr_list"] = search_cond(pid, new_value, ori_value_info, op)
         case "f32":
             if len(command) > 2: print("`f32` type must accept 1 num argument or none.", file=sys.stderr)
             if not (new_value := __trans_float(command[1], "`f32` type must accept 1 num value.")) and (
             isinstance(new_value, bool)):
                 return FAILURE
-            ori_value = new_value
-            addr_list = search_f32_again(pid, addr_list, new_value)
+            ori_value_info["value"] = new_value
+            if op(1, 1):
+                ori_value_info["addr_list"] = search_cond(pid, new_value, ori_value_info,
+                                                          lambda x,y: abs(x - y) < EPS32)
+            else:
+                ori_value_info["addr_list"] = search_cond(pid, new_value, ori_value_info, op)
         case "f64":
             if len(command) > 2: print("`f64` type must accept 1 num argument or none.", file=sys.stderr)
             if not (new_value := __trans_float(command[1], "`f64` type must accept 1 num value.")) and (
             isinstance(new_value, bool)):
                 return FAILURE
-            ori_value = new_value
-            addr_list = search_f64_again(pid, addr_list, new_value)
+            ori_value_info["value"] = new_value
+            if op(1, 1):
+                ori_value_info["addr_list"] = search_cond(pid, new_value, ori_value_info,
+                                                          lambda x,y: abs(x - y) < EPS64)
+            else:
+                ori_value_info["addr_list"] = search_cond(pid, new_value, ori_value_info, op)
         case _:
-            DEBUG(f"again `{value_type}` have not achieved.",
+            DEBUG(f"{op} `{ori_value_info["value_type"]}` have not achieved.",
                   "Here should not be arrived.")
             return FAILURE
-    ori_value_info["value"] = ori_value
-    ori_value_info["type"] = value_type
-    ori_value_info["width"] = ori_value_width
-    ori_value_info["addr_list"] = addr_list
     return SUCCESS
 
 def __refresher(refresh: bool, refresh_time: float):
@@ -684,7 +684,7 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
             DEBUG(f"set `{value_type}` have not achieved.",
                   "Here should not be arrived.")
             return FAILURE
-    ori_value_info["value"] = ori_value
+    ori_value_info["value"] = mod_value
     ori_value_info["type"] = value_type
     ori_value_info["width"] = ori_value_width
     ori_value_info["addr_list"] = addr_list
@@ -719,8 +719,23 @@ def parse_command(pid, addr_maps):
             if not run_sh(command):
                 continue
 
-        elif command[0] == "again":
-            if not parse_again(ori_value_info, command):
+        elif command[0] == "=":
+            if not parse_cond(ori_value_info, command, lambda x,y: x == y):
+                continue
+            list_addr(ori_value_info["addr_list"])
+
+        elif command[0] == "!=":
+            if not parse_cond(ori_value_info, command, lambda x,y: x != y):
+                continue
+            list_addr(ori_value_info["addr_list"])
+
+        elif command[0] == "<":
+            if not parse_cond(ori_value_info, command, lambda x,y: x < y):
+                continue
+            list_addr(ori_value_info["addr_list"])
+
+        elif command[0] == ">":
+            if not parse_cond(ori_value_info, command, lambda x,y: x > y):
                 continue
             list_addr(ori_value_info["addr_list"])
 
