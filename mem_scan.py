@@ -59,7 +59,7 @@ def search_target(addr_maps: list[tuple[int, int]], target_value: bytes, step: i
                 off: int = buf.find(target_value, offset)
                 if off == -1: break
                 addr_list.append(hex(start + off))
-                offset = off + 1
+                offset = off + step
     return addr_list
 
 def search_str(addr_maps: list[tuple[int, int]], target_value: str) -> list[str]:
@@ -259,88 +259,49 @@ def __check_lenght(v_type, command) -> bool:
     else:
         return SUCCESS
 
-SEARCH_COMMAND = ["str", "i32", "i64", "u32", "u64", "f32", "f64"]
-def parse_search(ori_value_info: dict, command: list[str]) -> bool:
-    ori_value: str|int|float = ori_value_info["value"]
+SEARCH_TYPE = ["str", "i32", "i64", "u32", "u64", "f32", "f64"]
+def parse_search(ori_value_info: dict) -> bool:
+    ori_value: Any = ori_value_info["value"]
     value_type: str = ori_value_info["type"]
     ori_value_width: int = ori_value_info["width"]
     addr_list: list[str] = ori_value_info["addr_list"]
-    match command[0]:
+    match value_type:
         case "str":
-            if len(command) < 2:
-                print("`string` command must accept 1 str argument.", file=sys.stderr)
-                return FAILURE
-            ori_value  = " ".join(command[1:])
-            value_type = "str"
+            ori_value = str(ori_value)
             ori_value_width = len(bytes(ori_value, "utf-8"))
             addr_list  = search_str(addr_maps, ori_value)
         case "i32":
-            if not __check_lenght(value_type, command):
-                return FAILURE
-            if not (ori_value := __trans_int(command[1], "`i32` command must accept a num value.")) and (
-            isinstance(ori_value, bool)):
-                return FAILURE
             if ori_value > MAX_I32 or ori_value < -MAX_I32:
                 print("`i32` command do not accept a num value more than 4 bytes, please use `i64`.", file=sys.stderr)
                 return FAILURE
-            value_type = "i32"
             ori_value_width = 4
             addr_list  = search_i32(addr_maps, ori_value)
         case "u32":
-            if not __check_lenght(value_type, command):
-                return FAILURE
-            if not (ori_value := __trans_int(command[1], "`u32` command must accept a num value.")) and (
-            isinstance(ori_value, bool)):
-                return FAILURE
             if ori_value > MAX_U32 or ori_value < 0:
                 print("`u32` command do not accept a num value more than 4 bytes, please use `u64`. Or negative num value for int", file=sys.stderr)
                 return FAILURE
-            value_type = "u32"
             ori_value_width = 4
             addr_list  = search_u32(addr_maps, ori_value)
         case "i64":
-            if not __check_lenght(value_type, command):
-                return FAILURE
-            if not (ori_value := __trans_int(command[1], "`i64` command must accept a num value.")) and (
-            isinstance(ori_value, bool)):
-                return FAILURE
             if ori_value > MAX_I64 or ori_value < -MAX_I64:
                 print("`i64` command do not accept a num value more than 8 bytes.", file=sys.stderr)
                 return FAILURE
-            value_type = "i64"
             ori_value_width = 8
             addr_list  = search_i64(addr_maps, ori_value)
         case "u64":
-            if not __check_lenght(value_type, command):
-                return FAILURE
-            if not (ori_value := __trans_int(command[1], "`u64` command must accept a num value.")) and (
-            isinstance(ori_value, bool)):
-                return FAILURE
             if ori_value > MAX_U64 or ori_value < 0:
                 print("`u64` command do not accept a num value more than 8 bytes or negative num value.", file=sys.stderr)
                 return FAILURE
-            value_type = "u64"
             ori_value_width = 8
             addr_list  = search_u64(addr_maps, ori_value)
         case "f32":
-            if not __check_lenght(value_type, command):
-                return FAILURE
-            if not (ori_value := __trans_float(command[1], "`f32` command must accept a num value.")) and (
-            isinstance(ori_value, bool)):
-                return FAILURE
             if (ori_value > MAX_F32 or ori_value < -MAX_F32
                 or -MIN_F32 < ori_value < 0 or 0 < ori_value < MIN_F32):
                 print("`f32` command do not accept a num value more than 4 bytes.", file=sys.stderr)
                 return FAILURE
-            value_type = "f32"
             ori_value_width = 4
             addr_list  = search_f32(addr_maps, ori_value)
         case "f64":
-            if not __check_lenght(value_type, command):
-                return FAILURE
-            if not (ori_value := __trans_float(command[1], "`f64` command must accept a num value.")) and (
-            isinstance(ori_value, bool)):
-                return FAILURE
             if (ori_value > MAX_F64 or ori_value < -MAX_F64
                 or -MIN_F64 < ori_value < 0 or 0 < ori_value < MIN_F64):
                 print("`f64` command do not accept a num value more than 8 bytes.", file=sys.stderr)
@@ -349,7 +310,7 @@ def parse_search(ori_value_info: dict, command: list[str]) -> bool:
             ori_value_width = 8
             addr_list  = search_f64(addr_maps, ori_value)
         case _:
-            DEBUG(f"The `{command[0]}` have not achived.",
+            DEBUG("Here should not be arrived.",
                   "Here should not be arrived.")
             return FAILURE
     ori_value_info["value"] = ori_value
@@ -557,7 +518,7 @@ def parse_delete(ori_value_info: dict, command: list[str]) -> bool:
     return SUCCESS
 
 def parse_set(ori_value_info: dict, command: list[str]) -> bool:
-    ori_value: str|int|float = ori_value_info["value"]
+    ori_value: Any = ori_value_info["value"]
     value_type: str = ori_value_info["type"]
     ori_value_width: int = ori_value_info["width"]
     addr_list: list[str] = ori_value_info["addr_list"]
@@ -693,7 +654,7 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
 def parse_command(pid, addr_maps):
     ori_value_info = {
         "value" : None,
-        "type"  : "str",
+        "type"  : "i32",
         "width" : 0,
         "addr_list" : [],
     }
@@ -718,6 +679,13 @@ def parse_command(pid, addr_maps):
         elif command[0] == "sh":
             if not run_sh(command):
                 continue
+
+        elif command[0] == "type":
+            if command[1] in SEARCH_TYPE:
+                ori_value_info["type"] = command[1]
+            else:
+                DEBUG(f"`{command[1]}` have not achived.",
+                      f"UnkownType `{command[1]}`, only accept `i32/i64/u32/u64/f32/f64/str` type.")
 
         elif command[0] == "=":
             if not parse_cond(ori_value_info, command, lambda x,y: x == y):
@@ -751,16 +719,32 @@ def parse_command(pid, addr_maps):
             if not parse_delete(ori_value_info ,command):
                 continue
 
-            # TODO: 省略类型搜索符，改用类型设置搜索
-        elif command[0] in SEARCH_COMMAND:
-            if not parse_search(ori_value_info, command):
-                continue
-            list_addr(ori_value_info["addr_list"])
-
         else:
-            DEBUG(f"`{command[0]}` have not achieved.",
-                  "UnkownCommand. Please input `str/i32` to search data or `set` to modify value.")
-
+            if len(command) > 1 and ori_value_info["type"] != "str":
+                DEBUG(f"{command[0]} have not achived.",
+                      "UnkownCommand, please use `help` to checkout.")
+                continue
+            ori_value_info["value"] = " ".join(command)
+            match ori_value_info["type"]:
+                case "i32" | "i64" | "u32" | "u64":
+                    check_value = __trans_int(ori_value_info["value"], "Here should not be arrived.")
+                    if check_value is FAILURE:
+                        continue
+                    ori_value_info["value"] = check_value
+                case "f32" | "f64":
+                    check_value = __trans_float(ori_value_info["value"], "Here should not be arrived.")
+                    if check_value is FAILURE:
+                        continue
+                    ori_value_info["value"] = check_value
+                case "str":
+                    pass
+                case _:
+                    DEBUG("type" + {ori_value_info["type"]} + "have not achived.",
+                          "Here should not be arrived.")
+                    continue
+            parse_search(ori_value_info)
+            list_addr(ori_value_info["addr_list"])
+            
 if __name__ == "__main__":
     assert len(sys.argv) == 2, "Script need a pid as argv."
     pid       = sys.argv[1]
