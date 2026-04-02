@@ -682,7 +682,10 @@ def parse_command(pid, addr_maps):
 
         elif command[0] == "type":
             if command[1] in SEARCH_TYPE:
-                ori_value_info["type"] = command[1]
+                ori_value_info["type"]  = command[1]
+                ori_value_info["value"] = None
+                ori_value_info["width"] = 0
+                ori_value_info["addr_list"] = []
             else:
                 DEBUG(f"`{command[1]}` have not achived.",
                       f"UnkownType `{command[1]}`, only accept `i32/i64/u32/u64/f32/f64/str` type.")
@@ -719,6 +722,10 @@ def parse_command(pid, addr_maps):
             if not parse_delete(ori_value_info ,command):
                 continue
 
+        elif command[0] == "reset":
+            ori_value_info["value"] = None
+            ori_value_info["addr_list"] = []
+
         else:
             if len(command) > 1 and ori_value_info["type"] != "str":
                 DEBUG(f"{command[0]} have not achived.",
@@ -742,7 +749,11 @@ def parse_command(pid, addr_maps):
                     DEBUG("type" + {ori_value_info["type"]} + "have not achived.",
                           "Here should not be arrived.")
                     continue
-            parse_search(ori_value_info)
+            if not ori_value_info["addr_list"]:
+                parse_search(ori_value_info)
+            else:
+                if not parse_cond(ori_value_info, ["="], lambda x,y: x == y):
+                    continue
             list_addr(ori_value_info["addr_list"])
             
 if __name__ == "__main__":
