@@ -10,10 +10,11 @@ from collections.abc import Callable
 from typing import Any, Iterator
 
 DEBUG_V = True
-def DEBUG(debug_warning: str, run_warning: str):
-    if DEBUG_V:
+if DEBUG_V:
+    def DEBUG(debug_warning: str, run_warning: str):
         assert False, debug_warning
-    else:
+else:
+    def DEBUG(debug_warning: str, run_warning: str):
         print(run_warning, file=sys.stderr)
 
 ALIGN   = True
@@ -144,8 +145,8 @@ def print_help():
         "-watch [[number][/[time]]]:",
         "\t\tView values in the address list. No argument: view all values; a number: view the specified value. Append `/[time]` for real-time monitoring (default interval: 2 seconds).",
         "- delete number:Delete the address at the specified index in the list.",
-        "- align on|off: toggle align mode (default: on).",
-        "- status: \tshow current type, target value and align mode.",
+        "- align on|off: Toggle align mode (default: on).",
+        "- status: \tShow current type, target value and align mode.",
         "- set value[/[time]]:",
         "\t\tModify values in the address list. Append `/[time]` for continuous modification (default interval: 1 second).",
     ]
@@ -616,6 +617,7 @@ def parse_command(pid, addr_maps):
                 DEBUG(f"`{command[1]}` have not achived.",
                       f"Unknown type `{command[1]}`. Valid types: i32, i64, u32, u64, f32, f64, str.")
 
+                # TODO: 令其支持首次搜索
         elif command[0] in ["=", "!=", "<", ">"]:
             if not ori_value_info["addr_list"]:
                 DEBUG(f"`{command[0]}` search for first time have not be achived.",
