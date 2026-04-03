@@ -62,34 +62,6 @@ def search_target(addr_maps: list[tuple[int, int]], target_value: bytes, step: i
                 offset = off + step
     return addr_list
 
-def search_str(addr_maps: list[tuple[int, int]], target_value: str) -> list[str]:
-    b_value = bytes(target_value, "utf-8")
-    return search_target(addr_maps, b_value, len(b_value))
-
-def search_i32(addr_maps: list[tuple[int, int]], target_value: int) -> list[str]:
-    b_value = target_value.to_bytes(4, "little", signed=True)
-    return search_target(addr_maps, b_value, 4)
-
-def search_u32(addr_maps: list[tuple[int, int]], target_value: int) -> list[str]:
-    b_value = target_value.to_bytes(4, "little")
-    return search_target(addr_maps, b_value, 4)
-    
-def search_i64(addr_maps: list[tuple[int, int]], target_value: int) -> list[str]:
-    b_value = target_value.to_bytes(8, "little", signed=True)
-    return search_target(addr_maps, b_value, 8)
-
-def search_u64(addr_maps: list[tuple[int, int]], target_value: int) -> list[str]:
-    b_value = target_value.to_bytes(8, "little")
-    return search_target(addr_maps, b_value, 8)
-
-def search_f32(addr_maps: list[tuple[int, int]], target_value: float) -> list[str]:
-    b_value = struct.pack("<f", target_value)
-    return search_target(addr_maps, b_value, 4)
-
-def search_f64(addr_maps: list[tuple[int, int]], target_value: float) -> list[str]:
-    b_value = struct.pack("<d", target_value)
-    return search_target(addr_maps, b_value, 8)
-
 def __bytes_trans(value_type: str, b_value: bytes) -> Any:
     normal_value: Any
     match value_type:
@@ -130,34 +102,6 @@ def watch_value(addr: str, value_width: int) -> bytes:
             except OSError:
                 assert False, "Don't know how to deal yet."
 
-def watch_str(addr: str, value_width: int) -> str:
-    b_value = watch_value(addr, value_width)
-    return b_value.decode("utf-8")
-
-def watch_i32(addr: str) -> int:
-    b_value = watch_value(addr, 4)
-    return int.from_bytes(b_value, "little", signed=True)
-
-def watch_u32(addr: str) -> int:
-    b_value = watch_value(addr, 4)
-    return int.from_bytes(b_value, "little")
-
-def watch_i64(addr: str) -> int:
-    b_value = watch_value(addr, 8)
-    return int.from_bytes(b_value, "little", signed=True)
-
-def watch_u64(addr: str) -> int:
-    b_value = watch_value(addr, 8)
-    return int.from_bytes(b_value, "little")
-
-def watch_f32(addr: str) -> float:
-    b_value = watch_value(addr, 4)
-    return struct.unpack("<f", b_value)[0]
-
-def watch_f64(addr: str) -> float:
-    b_value = watch_value(addr, 8)
-    return struct.unpack("<d", b_value)[0]
-
 def list_addr(addr_list: list[str]):
     if addr_list:
         for addr in enumerate(addr_list):
@@ -174,34 +118,6 @@ def modify_target(target_list: list[str], new_value: bytes):
             except OSError:
                 continue
             
-def modify_str(target_list: list[str], mod_value: str):
-    b_value = bytes(mod_value, "utf-8")
-    return modify_target(target_list, b_value)
-
-def modify_i32(target_list: list[str], mod_value: int):
-    b_value = mod_value.to_bytes(4, "little", signed=True)
-    return modify_target(target_list, b_value)
-
-def modify_u32(target_list: list[str], mod_value: int):
-    b_value = mod_value.to_bytes(4, "little")
-    return modify_target(target_list, b_value)
-
-def modify_i64(target_list: list[str], mod_value: int):
-    b_value = mod_value.to_bytes(8, "little", signed=True)
-    return modify_target(target_list, b_value)
-
-def modify_u64(target_list: list[str], mod_value: int):
-    b_value = mod_value.to_bytes(8, "little")
-    return modify_target(target_list, b_value)
-
-def modify_f32(target_list: list[str], mod_value: float):
-    b_value = struct.pack("<f", mod_value)
-    return modify_target(target_list, b_value)
-
-def modify_f64(target_list: list[str], mod_value: float):
-    b_value = struct.pack("<d", mod_value)
-    return modify_target(target_list, b_value)
-
 def print_help():
     help_message = [
         "HELP MESSAGE:",
@@ -258,11 +174,11 @@ def __auto_trans_value(value_type: str, ori_value: str) -> Any:
     value: Any = ori_value
     match value_type:
         case "i32" | "i64" | "u32" | "u64":
-            value = __trans_int(ori_value, "Here should not be arrived.")
+            value = __trans_int(ori_value, f"`{value_type}` requires a non-negative numeric value.")
             if value is FAILURE:
                 return FAILURE
         case "f32" | "f64":
-            value = __trans_float(ori_value, "Here should not be arrived.")
+            value = __trans_float(ori_value, f"`{value_type}` requires a non-negative numeric value.")
             if value is FAILURE:
                 return FAILURE
         case "str":
@@ -273,6 +189,45 @@ def __auto_trans_value(value_type: str, ori_value: str) -> Any:
             return FAILURE
     return value
 
+def __auto_trans_ori(ori_value_info: dict) -> bool:
+    check_value: Any
+    match ori_value_info["type"]:
+        case "i32" | "i64" | "u32" | "u64":
+            check_value = __trans_int(ori_value_info["value"], "Unknown command. Please use `help` to check.")
+            if check_value is FAILURE:
+                return FAILURE
+            ori_value_info["value"] = check_value
+        case "f32" | "f64":
+            check_value = __trans_float(ori_value_info["value"], "Unknown command. Please use `help` to check.")
+            if check_value is FAILURE:
+                return FAILURE
+            ori_value_info["value"] = check_value
+        case "str":
+            pass
+        case _:
+            assert False, "Here should not be arrived."
+    return SUCCESS
+
+def __trans_bytes(value_type: str, value: Any) -> bytes:
+    match value_type:
+        case "str":
+            b_value = bytes(value, "utf-8")
+        case "i32":
+            b_value = value.to_bytes(4, "little", signed=True)
+        case "u32":
+            b_value = value.to_bytes(4, "little")
+        case "i64":
+            b_value = value.to_bytes(8, "little", signed=True)
+        case "u64":
+            b_value = value.to_bytes(8, "little")
+        case "f32":
+            b_value = struct.pack("<f", value)
+        case "f64":
+            b_value = struct.pack("<d", value)
+        case _:
+            assert False, "Here should not be arrived."
+    return b_value
+
 def __check_lenght(token: str, command: list[str]) -> bool:
     if len(command) != 2:
         print(f"`{token}` requires exactly 1 argument.", file=sys.stderr)
@@ -281,50 +236,53 @@ def __check_lenght(token: str, command: list[str]) -> bool:
         return SUCCESS
 
 SEARCH_TYPE = ["str", "i32", "i64", "u32", "u64", "f32", "f64"]
+# TODO: 修改步长逻辑
 def parse_search(ori_value_info: dict) -> bool:
+    if __auto_trans_ori(ori_value_info) is FAILURE:
+        return FAILURE
+    target_value = __trans_bytes(ori_value_info["type"], ori_value_info["value"])
     match ori_value_info["type"]:
         case "str":
-            ori_value_info["value"] = str(ori_value_info["value"])
             ori_value_info["width"] = len(bytes(ori_value_info["value"], "utf-8"))
-            ori_value_info["addr_list"]  = search_str(addr_maps, ori_value_info["value"])
+            ori_value_info["addr_list"]  = search_target(addr_maps, target_value, ori_value_info["width"])
         case "i32":
             if ori_value_info["value"] > MAX_I32 or ori_value_info["value"] < -MAX_I32:
                 print("`i32` only supports 4-byte values. Use `i64` for larger values.", file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 4
-            ori_value_info["addr_list"]  = search_i32(addr_maps, ori_value_info["value"])
+            ori_value_info["addr_list"]  = search_target(addr_maps, target_value, 4)
         case "u32":
             if ori_value_info["value"] > MAX_U32 or ori_value_info["value"] < 0:
                 print("`u32` only supports 4-byte non-negative values. Use `i64/u64` for larger values.", file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 4
-            ori_value_info["addr_list"]  = search_u32(addr_maps, ori_value_info["value"])
+            ori_value_info["addr_list"]  = search_target(addr_maps, target_value, 4)
         case "i64":
             if ori_value_info["value"] > MAX_I64 or ori_value_info["value"] < -MAX_I64:
                 print("`i64` only supports 8-byte values.", file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 8
-            ori_value_info["addr_list"]  = search_i64(addr_maps, ori_value_info["value"])
+            ori_value_info["addr_list"]  = search_target(addr_maps, target_value, 8)
         case "u64":
             if ori_value_info["value"] > MAX_U64 or ori_value_info["value"] < 0:
                 print("`u64` only supports 8-byte non-negative values.", file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 8
-            ori_value_info["addr_list"]  = search_u64(addr_maps, ori_value_info["value"])
+            ori_value_info["addr_list"]  = search_target(addr_maps, target_value, 8)
         case "f32":
             if (ori_value_info["value"] > MAX_F32 or ori_value_info["value"] < -MAX_F32
                 or -MIN_F32 < ori_value_info["value"] < 0 or 0 < ori_value_info["value"] < MIN_F32):
                 print("`f32` only supports 4-byte values.", file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 4
-            ori_value_info["addr_list"]  = search_f32(addr_maps, ori_value_info["value"])
+            ori_value_info["addr_list"]  = search_target(addr_maps, target_value, 4)
         case "f64":
             if (ori_value_info["value"] > MAX_F64 or ori_value_info["value"] < -MAX_F64
                 or -MIN_F64 < ori_value_info["value"] < 0 or 0 < ori_value_info["value"] < MIN_F64):
                 print("`f64` only supports 8-byte values.", file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 8
-            ori_value_info["addr_list"]  = search_f64(addr_maps, ori_value_info["value"])
+            ori_value_info["addr_list"]  = search_target(addr_maps, target_value, 8)
         case _:
             DEBUG("Here should not be arrived.",
                   "Here should not be arrived.")
@@ -428,43 +386,64 @@ def parse_watch(ori_value_info: dict, command: list[str]) -> bool:
             @__refresher(refresh, refresh_time)
             def __str_refresher():
                 for addr in ord_addr_list:
-                    print(f"[{addr[0]}] {addr[1]}: {watch_str(addr[1], ori_value_info["width"])}")
+                    b_value = watch_value(addr[1], ori_value_info["width"])
+                    if (value := __bytes_trans("str", b_value)) is FAILURE:
+                        return FAILURE
+                    print(f"[{addr[0]}] {addr[1]}: {value}")
             __str_refresher()
         case "i32":
             @__refresher(refresh, refresh_time)
             def __i32_refresher():
                 for addr in ord_addr_list:
-                    print(f"[{addr[0]}] {addr[1]}: {watch_i32(addr[1])}")
+                    b_value = watch_value(addr[1], 4)
+                    if (value := __bytes_trans("i32", b_value)) is FAILURE:
+                        return FAILURE
+                    print(f"[{addr[0]}] {addr[1]}: {value}")
             __i32_refresher()
         case "u32":
             @__refresher(refresh, refresh_time)
             def __u32_refresher():
                 for addr in ord_addr_list:
-                    print(f"[{addr[0]}] {addr[1]}: {watch_u32(addr[1])}")
+                    b_value = watch_value(addr[1], 4)
+                    if (value := __bytes_trans("u32", b_value)) is FAILURE:
+                        return FAILURE
+                    print(f"[{addr[0]}] {addr[1]}: {value}")
             __u32_refresher()
         case "i64":
             @__refresher(refresh, refresh_time)
             def __i64_refresher():
                 for addr in ord_addr_list:
-                    print(f"[{addr[0]}] {addr[1]}: {watch_i64(addr[1])}")
+                    b_value = watch_value(addr[1], 8)
+                    if (value := __bytes_trans("i64", b_value)) is FAILURE:
+                        return FAILURE
+                    print(f"[{addr[0]}] {addr[1]}: {value}")
             __i64_refresher()
         case "u64":
             @__refresher(refresh, refresh_time)
             def __u64_refresher():
                 for addr in ord_addr_list:
-                    print(f"[{addr[0]}] {addr[1]}: {watch_u64(addr[1])}")
+                    b_value = watch_value(addr[1], 8)
+                    if (value := __bytes_trans("u64", b_value)) is FAILURE:
+                        return FAILURE
+                    print(f"[{addr[0]}] {addr[1]}: {value}")
             __u64_refresher()
         case "f32":
             @__refresher(refresh, refresh_time)
             def __f32_refresher():
                 for addr in ord_addr_list:
-                    print(f"[{addr[0]}] {addr[1]}: {watch_f32(addr[1])}")
+                    b_value = watch_value(addr[1], 4)
+                    if (value := __bytes_trans("f32", b_value)) is FAILURE:
+                        return FAILURE
+                    print(f"[{addr[0]}] {addr[1]}: {value}")
             __f32_refresher()
         case "f64":
             @__refresher(refresh, refresh_time)
             def __f64_refresher():
                 for addr in ord_addr_list:
-                    print(f"[{addr[0]}] {addr[1]}: {watch_f64(addr[1])}")
+                    b_value = watch_value(addr[1], 8)
+                    if (value := __bytes_trans("f64", b_value)) is FAILURE:
+                        return FAILURE
+                    print(f"[{addr[0]}] {addr[1]}: {value}")
             __f64_refresher()
         case _:
             DEBUG("`" + ori_value_info["type"] + "` have not achieved.",
@@ -511,59 +490,66 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
             if len(bytes(mod_value, "utf-8")) > ori_value_info["width"]:
                 print("String length must not exceed the original length.", file=sys.stderr)
                 return FAILURE
+            b_value = __trans_bytes(ori_value_info["type"], mod_value)
             @__refresher(refresh, refresh_time)
             def __modify_str():
-                modify_str(ori_value_info["addr_list"], mod_value)
+                modify_target(ori_value_info["addr_list"], b_value)
             __modify_str()
         case "i32":
             if mod_value > MAX_I32 or mod_value < -MAX_I32:
                 print("`i32` only supports 4-byte values.", file=sys.stderr)
                 return FAILURE
+            b_value = __trans_bytes(ori_value_info["type"], mod_value)
             @__refresher(refresh, refresh_time)
             def __modify_i32():
-                modify_i32(ori_value_info["addr_list"], mod_value)
+                modify_target(ori_value_info["addr_list"], b_value)
             __modify_i32()
         case "u32":
             if mod_value > MAX_U32 or mod_value < 0:
                 print("`u32` only supports 4-byte non-negative values.", file=sys.stderr)
                 return FAILURE
+            b_value = __trans_bytes(ori_value_info["type"], mod_value)
             @__refresher(refresh, refresh_time)
             def __modify_u32():
-                modify_u32(ori_value_info["addr_list"], mod_value)
+                modify_target(ori_value_info["addr_list"], b_value)
             __modify_u32()
         case "i64":
             if mod_value > MAX_I64 or mod_value < -MAX_I64:
                 print("`i64` only supports 8-byte values.", file=sys.stderr)
                 return FAILURE
+            b_value = __trans_bytes(ori_value_info["type"], mod_value)
             @__refresher(refresh, refresh_time)
             def __modify_i64():
-                modify_i64(ori_value_info["addr_list"], mod_value)
+                modify_target(ori_value_info["addr_list"], b_value)
             __modify_i64()
         case "u64":
             if mod_value > MAX_U64 or mod_value < 0:
                 print("`i64` only supports 8-byte non-negative values.", file=sys.stderr)
                 return FAILURE
+            b_value = __trans_bytes(ori_value_info["type"], mod_value)
             @__refresher(refresh, refresh_time)
             def __modify_u64():
-                __modify_u64()
-            modify_u64(ori_value_info["addr_list"], mod_value)
+                modify_target(ori_value_info["addr_list"], b_value)
+            __modify_u64()
         case "f32":
             if (mod_value > MAX_F32 or mod_value < -MAX_F32
                 or -MIN_F32 < mod_value < 0 or 0 < mod_value < MIN_F32):
                 print("`f32` only supports 4-byte values.", file=sys.stderr)
                 return FAILURE
+            b_value = __trans_bytes(ori_value_info["type"], mod_value)
             @__refresher(refresh, refresh_time)
             def __modify_f32():
-                modify_f32(ori_value_info["addr_list"], mod_value)
+                modify_target(ori_value_info["addr_list"], b_value)
             __modify_f32()
         case "f64":
             if (mod_value > MAX_F64 or mod_value < -MAX_F64
                 or -MIN_F64 < mod_value < 0 or 0 < mod_value < MIN_F64):
                 print("`f64` only supports 8-byte values.", file=sys.stderr)
                 return FAILURE
+            b_value = __trans_bytes(ori_value_info["type"], mod_value)
             @__refresher(refresh, refresh_time)
             def __modify_f64():
-                modify_f64(ori_value_info["addr_list"], mod_value)
+                modify_target(ori_value_info["addr_list"], b_value)
             __modify_f64()
         case _:
             DEBUG(f"set `" + ori_value_info["type"] + "` have not achieved.",
@@ -581,25 +567,6 @@ def parse_command(pid, addr_maps):
         "addr_list" : [],
     }
     
-    def __auto_trans_ori(ori_value_info: dict) -> bool:
-        check_value: Any
-        match ori_value_info["type"]:
-            case "i32" | "i64" | "u32" | "u64":
-                check_value = __trans_int(ori_value_info["value"], "Unknown command. Please use `help` to check.")
-                if check_value is FAILURE:
-                    return FAILURE
-                ori_value_info["value"] = check_value
-            case "f32" | "f64":
-                check_value = __trans_float(ori_value_info["value"], "Unknown command. Please use `help` to check.")
-                if check_value is FAILURE:
-                    return FAILURE
-                ori_value_info["value"] = check_value
-            case "str":
-                pass
-            case _:
-                assert False, "Here should not be arrived."
-        return SUCCESS
-
     while True:
         try:
             command = input("> ").split()
