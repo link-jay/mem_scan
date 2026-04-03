@@ -7,7 +7,7 @@ import struct
 import subprocess
 import signal
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Iterator
 
 DEBUG_V = True
 def DEBUG(debug_warning: str, run_warning: str):
@@ -16,9 +16,10 @@ def DEBUG(debug_warning: str, run_warning: str):
     else:
         print(run_warning, file=sys.stderr)
 
+ALIGN   = True
+
 FAILURE = False
 SUCCESS = True
-
 MAX_I32 = (1 << 31) - 1
 MAX_U32 = (1 << 32) - 1
 MAX_I64 = (1 << 63) - 1
@@ -41,8 +42,20 @@ def get_maps(pid: str) -> list[tuple[int, int]]:
             addr_maps.append((start, end))
     return addr_maps
             
+def __bytes_search(buf: bytes, step: int, value: bytes) -> Iterator[int]:
+    if ALIGN:
+        for off in range(0, len(buf), step):
+            if buf[off:off+step] == value:
+                yield off
+    else:
+        offset = 0
+        while True:
+            off = buf.find(value, offset)
+            if off == -1: break
+            offset = off + step
+            yield off
+
 def search_target(addr_maps: list[tuple[int, int]], target_value: bytes, step: int) -> list[str]:
-    # TODO: 定义对齐非对齐搜索模式
     addr_list: list[str] = []
     with open("/proc/"+pid+"/mem", "rb") as mem:
         for addr_map in addr_maps:
@@ -55,11 +68,8 @@ def search_target(addr_maps: list[tuple[int, int]], target_value: bytes, step: i
                 buf: bytes = mem.read(size)
             except OSError:
                 continue
-            while True:
-                off: int = buf.find(target_value, offset)
-                if off == -1: break
-                addr_list.append(hex(start + off))
-                offset = off + step
+            addrs = map(lambda x: hex(start + x), __bytes_search(buf, step, target_value))
+            addr_list.extend(list(addrs))
     return addr_list
 
 def __bytes_trans(value_type: str, b_value: bytes) -> Any:
@@ -134,6 +144,8 @@ def print_help():
         "-watch [[number][/[time]]]:",
         "\t\tView values in the address list. No argument: view all values; a number: view the specified value. Append `/[time]` for real-time monitoring (default interval: 2 seconds).",
         "- delete number:Delete the address at the specified index in the list.",
+        "- align on|off: toggle align mode (default: on).",
+        "- status: \tshow current type, target value and align mode.",
         "- set value[/[time]]:",
         "\t\tModify values in the address list. Append `/[time]` for continuous modification (default interval: 1 second).",
     ]
@@ -141,10 +153,7 @@ def print_help():
     for line in help_message:
         print(line)
 
-def run_sh(command) -> bool:
-    if len(command) < 2:
-        print("`sh` must accept a command.", file=sys.stderr)
-        return FAILURE
+def run_sh(command):
     try:
         temp_sh = subprocess.Popen(command[1:])
         temp_sh.wait()
@@ -152,7 +161,6 @@ def run_sh(command) -> bool:
         temp_sh.send_signal(signal.SIGINT)
         temp_sh.wait()
         print()
-    return SUCCESS
 
 def __trans_int(argv: str, exp: str) -> int|bool:
     try:
@@ -236,13 +244,14 @@ def __check_lenght(token: str, command: list[str]) -> bool:
         return SUCCESS
 
 SEARCH_TYPE = ["str", "i32", "i64", "u32", "u64", "f32", "f64"]
-# TODO: 修改步长逻辑
 def parse_search(ori_value_info: dict) -> bool:
     if __auto_trans_ori(ori_value_info) is FAILURE:
         return FAILURE
     target_value = __trans_bytes(ori_value_info["type"], ori_value_info["value"])
     match ori_value_info["type"]:
         case "str":
+            print("`str` type must use align mode; automatically switching to align mode.")
+            global ALIGN; ALIGN = False
             ori_value_info["width"] = len(bytes(ori_value_info["value"], "utf-8"))
             ori_value_info["addr_list"]  = search_target(addr_maps, target_value, ori_value_info["width"])
         case "i32":
@@ -566,6 +575,7 @@ def parse_command(pid, addr_maps):
         "width" : 0,
         "addr_list" : [],
     }
+    global ALIGN
     
     while True:
         try:
@@ -579,14 +589,22 @@ def parse_command(pid, addr_maps):
             continue
 
         elif command[0] == "list":
+            if len(command) > 1:
+                print("`list` does not need an argument.", file=sys.stderr)
+                continue
             list_addr(ori_value_info["addr_list"])
 
         elif command[0] == "help":
+            if len(command) > 1:
+                print("`help` does not need an argument.", file=sys.stderr)
+                continue
             print_help()
 
         elif command[0] == "sh":
-            if run_sh(command) is FAILURE:
+            if len(command) < 2:
+                print("`sh` must accept a command.", file=sys.stderr)
                 continue
+            run_sh(command)
 
         elif command[0] == "type":
             if command[1] in SEARCH_TYPE:
@@ -632,6 +650,27 @@ def parse_command(pid, addr_maps):
         elif command[0] == "reset":
             ori_value_info["value"] = None
             ori_value_info["addr_list"] = []
+
+        elif command[0] == "align":
+            if len(command) != 2:
+                print("`align` requires exactly 2 argument. Valid value: on or off.")
+                continue
+            if command[1] == "on":
+                ALIGN = True
+            elif command[1] == "off":
+                ALIGN = False
+            else:
+                print("`align` only accept `on` or `off`.")
+                continue
+
+        elif command[0] == "status":
+            if len(command) > 1:
+                print("`status` does not need an argument.")
+                continue
+            print(f"type: \t{ori_value_info['type']}\n"
+                  f"value:\t{ori_value_info['value']}")
+            if ALIGN: print(f"align:\ton")
+            else: print(f"align:\toff")
 
         else:
             if len(command) > 1 and ori_value_info["type"] != "str":

@@ -5,7 +5,7 @@ It supports search command like `int`/`str` to locate addresses. The non-search 
 
 ## Feature
 * [ ] memscan-like commands
-* [ ] choose align
+* [x] align search
 * [x] find and modify str
 * [ ] find and modify i8/i16
 * [ ] find and modify u8/u16
@@ -32,6 +32,8 @@ It supports search command like `int`/`str` to locate addresses. The non-search 
 `reset`: Reset the search results.  
 `list`: List all addresses found by search commands.  
 `watch [[number][/[time]]]`: View values in the address list. No argument: view all values; a number: view the specified value. Append `/[time]` for real-time monitoring (default interval: 2 seconds).  
+`align on|off`: toggle align mode (default: on).  
+`status`: show current type, target value and align mode.  
 `delete number`: Delete the address at the specified index in the list.  
 `set value[/[time]]`: Modify values in the address list. Append `/[time]` for continuous modification (default interval: 1 second).  
 
