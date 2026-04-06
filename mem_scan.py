@@ -105,6 +105,19 @@ def search_cond(pid: str, value_info: dict, new_value: Any, op: Callable) -> lis
                 continue
     return new_addr_list
 
+def search_cond2(pid: str, value_info: dict, op: Callable) -> list[str]:
+    new_addr_list = []
+    with open("/proc/"+pid+"/mem", "rb") as mem:
+        for addr in value_info["addr_list"]:
+            try:
+                mem.seek(int(addr, 16))
+                mem_value = __bytes_trans(value_info["type"], mem.read(value_info["width"]))
+                if op(mem_value, value_info["value"]):
+                    new_addr_list.append(addr)
+            except OSError:
+                continue
+    return new_addr_list
+
 def watch_value(addr: str, value_width: int) -> bytes:
     with open("/proc/"+pid+"/mem", "rb") as mem:
             try:
@@ -333,6 +346,29 @@ def parse_cond(ori_value_info: dict, command: list[str], op: Callable) -> bool:
                 ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, lambda x,y: abs(x - y) < EPS64)
             else:
                 ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, op)
+        case _:
+            DEBUG(f"{op} `{ori_value_info["value_type"]}` have not achieved.",
+                  "Here should not be arrived.")
+            return FAILURE
+    return SUCCESS
+
+def parse_cond2(ori_value_info: dict, op: Callable):
+    if ori_value_info["type"] == str:
+        print("`str` type do not accept '+/-' oprator.", file=sys.stderr)
+        return FAILURE
+    match ori_value_info["type"]:
+        case "i32":
+            ori_value_info["addr_list"] = search_cond2(pid, ori_value_info, op)
+        case "u32":
+            ori_value_info["addr_list"] = search_cond2(pid, ori_value_info, op)
+        case "i64":
+            ori_value_info["addr_list"] = search_cond2(pid, ori_value_info, op)
+        case "u64":
+            ori_value_info["addr_list"] = search_cond2(pid, ori_value_info, op)
+        case "f32":
+            ori_value_info["addr_list"] = search_cond2(pid, ori_value_info, op)
+        case "f64":
+            ori_value_info["addr_list"] = search_cond2(pid, ori_value_info, op)
         case _:
             DEBUG(f"{op} `{ori_value_info["value_type"]}` have not achieved.",
                   "Here should not be arrived.")
@@ -637,6 +673,34 @@ def parse_command(pid, addr_maps):
                         continue
             list_addr(ori_value_info["addr_list"])
 
+        elif command[0] in ["+", "-"]:
+            if not ori_value_info["addr_list"]:
+                DEBUG(f"`{command[0]}` search for first time have not be achived.",
+                      "Please search a value first.")
+            if len(command) == 1:
+                match command[0]:
+                    case "+":
+                        if parse_cond(ori_value_info, command, lambda x,y: x > y) is FAILURE:
+                            continue
+                    case "-":
+                        if parse_cond(ori_value_info, command, lambda x,y: x < y) is FAILURE:
+                            continue
+            elif len(command) == 2:
+                if (cond_value := __auto_trans_value(ori_value_info["type"], command[1])) is FAILURE:
+                    continue
+                match command[0]:
+                    case "+":
+                        if parse_cond2(ori_value_info, lambda x,y: x == y + cond_value) is FAILURE:
+                            continue
+                        ori_value_info["value"] += cond_value
+                    case "-":
+                        if parse_cond2(ori_value_info, lambda x,y: x == y - cond_value) is FAILURE:
+                            continue
+                        ori_value_info["value"] -= cond_value
+            else:
+                print(f"`{command[0]}` do not allow to accept so much value.", file=sys.stderr)
+            list_addr(ori_value_info["addr_list"])
+
         elif command[0] == "set":
             if parse_set(ori_value_info, command) is FAILURE:
                 continue
@@ -679,9 +743,12 @@ def parse_command(pid, addr_maps):
                 DEBUG(f"{command[0]} have not achived.",
                       "Unknown command. Please use `help` to check.")
                 continue
-            ori_value_info["value"] = " ".join(command)
-            if __auto_trans_ori(ori_value_info) is FAILURE:
+            temp_value_info = ori_value_info.copy()
+            temp_value_info["value"] = " ".join(command)
+            if __auto_trans_ori(temp_value_info) is FAILURE:
+                del temp_value_info
                 continue
+            ori_value_info = temp_value_info
             if not ori_value_info["addr_list"]:
                 parse_search(ori_value_info)
             else:
