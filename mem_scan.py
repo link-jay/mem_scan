@@ -153,9 +153,10 @@ def print_help():
         "- = [str|num]: \tSearch again using the last search result. No argument means search for the original value; a new `str/num` argument means search for the new value of the same type.",
         "- >/< [str|num]:Search for values greater/less than the specified `num`. No argument means search relative to the original value. For `str`, these commands function the same as `!=`.",
         "- !=: \t\tSearch for values not equal to the specified `str/num`. No argument means search relative to the original value.",
+        "- +/-: \tSearch for values by adding or subtracting `num`. If no argument is provided, the behavior is the same as `>/<`. Not allowed for strings.",
         "- reset: \tReset the search results.",
         "- list: \tList all addresses found by search commands.",
-        "-watch [[number][/[time]]]:",
+        "- watch [[number][/[time]]]:",
         "\t\tView values in the address list. No argument: view all values; a number: view the specified value. Append `/[time]` for real-time monitoring (default interval: 2 seconds).",
         "- delete number:Delete the address at the specified index in the list.",
         "- align on|off: Toggle align mode (default: on).",
@@ -314,7 +315,7 @@ def parse_search(ori_value_info: dict) -> bool:
 
 def parse_cond(ori_value_info: dict, command: list[str], op: Callable) -> bool:
     if len(command) == 1:
-        command.append(str(ori_value_info["value"]))
+        command.append(ori_value_info["value"])
     if len(command) > 2 and ori_value_info["type"] != "str":
         print("`" + ori_value_info["type"] + "`" + " requires exactly 0 or 1 argument.", file=sys.stderr)
         return FAILURE
