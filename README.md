@@ -67,3 +67,6 @@ find it at 0x...
 find it at 0x...
 > set 123
 ```
+
+## Arch
+![Arch](./arch.svg)
