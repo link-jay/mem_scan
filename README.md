@@ -29,6 +29,7 @@ It supports search command like `int`/`str` to locate addresses. The non-search 
 `= [str|num]`: Search again using the last search result. No argument means search for the original value; a new `str/num` argument means search for the new value of the same type.  
 `>/< [str|num]`: Search for values greater/less than the specified `num`. No argument means search relative to the original value. For `str`, these commands function the same as `!=`.  
 `!=`: Search for values not equal to the specified `str/num`. No argument means search relative to the original value.  
+`+/- [num]`: Search for values by adding or subtracting `num`. If no argument is provided, the behavior is the same as `>/<`. Not allowed for strings.  
 `reset`: Reset the search results.  
 `list`: List all addresses found by search commands.  
 `watch [[number][/[time]]]`: View values in the address list. No argument: view all values; a number: view the specified value. Append `/[time]` for real-time monitoring (default interval: 2 seconds).  
