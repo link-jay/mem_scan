@@ -1,8 +1,8 @@
-digraph G{
+digraph G {
 	get_maps -> parse_command
     	parse_command -> parse_search -> search_target -> __bytes_search;
-	parse_command -> parse_cond -> search_cond;
-      	parse_command -> parse_cond2 -> search_cond2;
+	parse_command -> parse_cond -> __search_cond;
+      	parse_command -> parse_cond2 -> __search_cond;
       	parse_command -> parse_watch -> watch_value;
         parse_command -> parse_delete;
         parse_command -> parse_set -> modify_target;

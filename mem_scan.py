@@ -129,19 +129,6 @@ def search_cond(pid: str, value_info: dict, new_value: Any, op: Callable) -> lis
                 continue
     return new_addr_list
 
-def search_cond2(pid: str, value_info: dict, op: Callable) -> list[str]:
-    new_addr_list = []
-    with open("/proc/"+pid+"/mem", "rb") as mem:
-        for addr in value_info["addr_list"]:
-            try:
-                mem.seek(int(addr, 16))
-                mem_value = __bytes_trans(value_info["type"], mem.read(value_info["width"]))
-                if op(mem_value, value_info["value"]):
-                    new_addr_list.append(addr)
-            except OSError:
-                continue
-    return new_addr_list
-
 def watch_value(addr: str, value_width: int) -> bytes:
     with open("/proc/"+pid+"/mem", "rb") as mem:
             try:
@@ -363,23 +350,23 @@ def parse_cond(ori_value_info: dict, command: list[str], op: Callable) -> bool:
             return FAILURE
     return SUCCESS
 
-def parse_cond2(ori_value_info: dict, command: list, op: Callable):
+def parse_cond2(ori_value_info: dict, command: list, op: Callable) -> bool:
     if ori_value_info["type"] == str:
         print("`str` type do not accept '+/-' oprator.", file=sys.stderr)
         return FAILURE
     match ori_value_info["type"]:
         case "i32":
-            ori_value_info["addr_list"] = search_cond2(pid, ori_value_info, op)
+            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, ori_value_info["value"], op)
         case "u32":
-            ori_value_info["addr_list"] = search_cond2(pid, ori_value_info, op)
+            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, ori_value_info["value"], op)
         case "i64":
-            ori_value_info["addr_list"] = search_cond2(pid, ori_value_info, op)
+            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, ori_value_info["value"], op)
         case "u64":
-            ori_value_info["addr_list"] = search_cond2(pid, ori_value_info, op)
+            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, ori_value_info["value"], op)
         case "f32":
-            ori_value_info["addr_list"] = search_cond2(pid, ori_value_info, op)
+            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, ori_value_info["value"], op)
         case "f64":
-            ori_value_info["addr_list"] = search_cond2(pid, ori_value_info, op)
+            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, ori_value_info["value"], op)
         case _:
             DEBUG(f"{op} `{ori_value_info["value_type"]}` have not achieved.",
                   "Here should not be arrived.")
