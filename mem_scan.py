@@ -101,7 +101,6 @@ def search_target(addr_maps: list[tuple[int, int]], target_value: bytes, step: i
             addr_list.extend(list(addrs))
     return addr_list
 
-# TODO: 合并逻辑
 def __bytes_trans(value_type: str, b_value: bytes) -> Any:
     normal_value: Any
     match value_type:
@@ -255,7 +254,6 @@ def __auto_trans_ori(ori_value_info: dict) -> bool:
             assert False, "Here should not be arrived."
     return SUCCESS
 
-# TODO: 合并逻辑
 def __trans_bytes(value_type: str, value: Any) -> bytes:
     match value_type:
         case "str":
@@ -371,26 +369,21 @@ def parse_search(ori_value_info: dict) -> bool:
     return SUCCESS
 
 def parse_cond(ori_value_info: dict, command: list[str], op: Callable) -> bool:
-    if (new_value := __auto_trans_value(ori_value_info["type"], command[1])) is FAILURE:
-        return FAILURE
-    if ori_value_info["type"] == "str":
-        ori_value_info["value"] = new_value = __str(" ".join(command[1:]))
-        ori_value_info["width"] = len(new_value)
-        ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, op)
-    elif ori_value_info["type"] in SEARCH_TYPE[1:]:
-        ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, op)
+    if command[0] not in ["+", "-"]:
+        if (new_value := __auto_trans_value(ori_value_info["type"], command[1])) is FAILURE:
+            return FAILURE
     else:
-        DEBUG(f"{op} `{ori_value_info["value_type"]}` have not achieved.",
-              "Here should not be arrived.")
-        return FAILURE
-    return SUCCESS
-
-def parse_cond2(ori_value_info: dict, command: list, op: Callable) -> bool:
-    if ori_value_info["type"] == str:
-        print("`str` type do not accept '+/-' oprator.", file=sys.stderr)
-        return FAILURE
+        new_value = ori_value_info["value"]
+    if ori_value_info["type"] == "str":
+        if command[0] not in ["+", "-"]:
+            ori_value_info["value"] = new_value = __str(" ".join(command[1:]))
+            ori_value_info["width"] = len(new_value)
+            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, op)
+        else:
+            print("`str` type do not accept '+/-' oprator.", file=sys.stderr)
+            return FAILURE
     elif ori_value_info["type"] in SEARCH_TYPE[1:]:
-        ori_value_info["addr_list"] = search_cond(pid, ori_value_info, ori_value_info["value"], op)
+        ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, op)
     else:
         DEBUG(f"{op} `{ori_value_info["value_type"]}` have not achieved.",
               "Here should not be arrived.")
@@ -799,11 +792,11 @@ def parse_command(pid, addr_maps):
                         if parse_cond(ori_value_info, command, lambda x,y: x > y) is FAILURE:
                             continue
                     case "+":
-                        if parse_cond2(ori_value_info, command, lambda x,y: x == y + cond_value) is FAILURE:
+                        if parse_cond(ori_value_info, command, lambda x,y: x == y + cond_value) is FAILURE:
                             continue
                         ori_value_info["value"] += cond_value
                     case "-":
-                        if parse_cond2(ori_value_info, command, lambda x,y: x == y - cond_value) is FAILURE:
+                        if parse_cond(ori_value_info, command, lambda x,y: x == y - cond_value) is FAILURE:
                             continue
                         ori_value_info["value"] -= cond_value
             else:
