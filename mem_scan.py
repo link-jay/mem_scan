@@ -439,112 +439,20 @@ def parse_watch(ori_value_info: dict, command: list[str]) -> bool:
     elif len(command) > 2:
         print("`watch` received too many arguments. Please check.", file=sys.stderr)
         return FAILURE
+    if ori_value_info["type"] not in SEARCH_TYPE:
+        DEBUG("`" + ori_value_info["type"] + "` have not achieved.",
+              "Here should not be arrived.")
     # __refresher(refresh, refresh_time) -> wrapper
     # __str_refresher = wrapper(__str_refresher) -> inner
     # __str_refresher() -> inner()
-    match ori_value_info["type"]:
-        case "str":
-            @__refresher(refresh, refresh_time)
-            def __str_refresher():
-                for addr in ord_addr_list:
-                    b_value = watch_value(addr[1], ori_value_info["width"])
-                    if (value := __bytes_trans("str", b_value)) is FAILURE:
-                        return FAILURE
-                    print(f"[{addr[0]}] {addr[1]}: {value}")
-            __str_refresher()
-        case "i8":
-            @__refresher(refresh, refresh_time)
-            def __i8_refresher():
-                for addr in ord_addr_list:
-                    b_value = watch_value(addr[1], 1)
-                    if (value := __bytes_trans("i8", b_value)) is FAILURE:
-                        return FAILURE
-                    print(f"[{addr[0]}] {addr[1]}: {value}")
-            __i8_refresher()
-        case "u8":
-            @__refresher(refresh, refresh_time)
-            def __u8_refresher():
-                for addr in ord_addr_list:
-                    b_value = watch_value(addr[1], 1)
-                    if (value := __bytes_trans("u8", b_value)) is FAILURE:
-                        return FAILURE
-                    print(f"[{addr[0]}] {addr[1]}: {value}")
-            __u8_refresher()
-        case "i16":
-            @__refresher(refresh, refresh_time)
-            def __i16_refresher():
-                for addr in ord_addr_list:
-                    b_value = watch_value(addr[1], 2)
-                    if (value := __bytes_trans("i16", b_value)) is FAILURE:
-                        return FAILURE
-                    print(f"[{addr[0]}] {addr[1]}: {value}")
-            __i16_refresher()
-        case "u16":
-            @__refresher(refresh, refresh_time)
-            def __u16_refresher():
-                for addr in ord_addr_list:
-                    b_value = watch_value(addr[1], 2)
-                    if (value := __bytes_trans("u16", b_value)) is FAILURE:
-                        return FAILURE
-                    print(f"[{addr[0]}] {addr[1]}: {value}")
-            __u16_refresher()
-        case "i32":
-            @__refresher(refresh, refresh_time)
-            def __i32_refresher():
-                for addr in ord_addr_list:
-                    b_value = watch_value(addr[1], 4)
-                    if (value := __bytes_trans("i32", b_value)) is FAILURE:
-                        return FAILURE
-                    print(f"[{addr[0]}] {addr[1]}: {value}")
-            __i32_refresher()
-        case "u32":
-            @__refresher(refresh, refresh_time)
-            def __u32_refresher():
-                for addr in ord_addr_list:
-                    b_value = watch_value(addr[1], 4)
-                    if (value := __bytes_trans("u32", b_value)) is FAILURE:
-                        return FAILURE
-                    print(f"[{addr[0]}] {addr[1]}: {value}")
-            __u32_refresher()
-        case "i64":
-            @__refresher(refresh, refresh_time)
-            def __i64_refresher():
-                for addr in ord_addr_list:
-                    b_value = watch_value(addr[1], 8)
-                    if (value := __bytes_trans("i64", b_value)) is FAILURE:
-                        return FAILURE
-                    print(f"[{addr[0]}] {addr[1]}: {value}")
-            __i64_refresher()
-        case "u64":
-            @__refresher(refresh, refresh_time)
-            def __u64_refresher():
-                for addr in ord_addr_list:
-                    b_value = watch_value(addr[1], 8)
-                    if (value := __bytes_trans("u64", b_value)) is FAILURE:
-                        return FAILURE
-                    print(f"[{addr[0]}] {addr[1]}: {value}")
-            __u64_refresher()
-        case "f32":
-            @__refresher(refresh, refresh_time)
-            def __f32_refresher():
-                for addr in ord_addr_list:
-                    b_value = watch_value(addr[1], 4)
-                    if (value := __bytes_trans("f32", b_value)) is FAILURE:
-                        return FAILURE
-                    print(f"[{addr[0]}] {addr[1]}: {value}")
-            __f32_refresher()
-        case "f64":
-            @__refresher(refresh, refresh_time)
-            def __f64_refresher():
-                for addr in ord_addr_list:
-                    b_value = watch_value(addr[1], 8)
-                    if (value := __bytes_trans("f64", b_value)) is FAILURE:
-                        return FAILURE
-                    print(f"[{addr[0]}] {addr[1]}: {value}")
-            __f64_refresher()
-        case _:
-            DEBUG("`" + ori_value_info["type"] + "` have not achieved.",
-                      "Here should not be arrived.")
+    @__refresher(refresh, refresh_time)
+    def __watch_refresher():
+        for addr in ord_addr_list:
+            b_value = watch_value(addr[1], ori_value_info["width"])
+            if (value := __bytes_trans(ori_value_info["type"], b_value)) is FAILURE:
+                return FAILURE
+            print(f"[{addr[0]}] {addr[1]}: {value}")
+    __watch_refresher()
     return SUCCESS
 
 def parse_delete(ori_value_info: dict, command: list[str]) -> bool:
