@@ -1,19 +1,16 @@
 # mem_scan
 A memory scan program in python.  
-This is a Python-based memory scanning program built on the Linux virtual memory system. Its core functionality is implemented by parsing the `/proc/[pid]/maps` and `/proc/[pid]/mem` files. Currently, the program only supports data widths compatible with C programming language types.  
+This is a Python-based memory scanning program built on the Linux virtual memory system. Its core functionality is implemented by parsing the `/proc/[pid]/maps` and `/proc/[pid]/mem` files.  
 The program allows users to input a target value to locate corresponding memory addresses. The data width used for scanning is determined by the specified data type, and can be adjusted via the alignment mode. Non-search commands and conditional search operations depend on the data type set by the preceding search command, which is automatically recorded when the first search is executed.  
 
 ## Feature
 * [ ] memscan-like commands
 * [x] align search
 * [x] find and modify str
-* [ ] find and modify i8/i16
-* [ ] find and modify u8/u16
-* [x] find and modify i32/i64
-* [x] find and modify u32/u64
+* [x] find and modify i8/i16/i32/i64/u8/u16/u32/u64
 * [x] find and modify f32/f64
 * [x] search many times
-* [ ] condition search
+* [x] condition search
 * [x] delete addr
 * [x] check value
 * [x] modify value continuously
@@ -24,7 +21,7 @@ The program allows users to input a target value to locate corresponding memory 
 
 `help`: Print help message.  
 `sh cmd`: Run a shell command temporarily.  
-`type [i32|i64|u32|u64|f32|f64|str]`: Set the value type for search (default: `i32`).  
+`type [i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|str]`: Set the value type for search (default: `i32`).  
 `str|num`: Search for the specified `str/num` value. Repeating is equivalent to using `=`.  
 `= [str|num]`: Search again using the last search result. No argument means search for the original value; a new `str/num` argument means search for the new value of the same type.  
 `>/< [str|num]`: Search for values greater/less than the specified `num`. No argument means search relative to the original value. For `str`, these commands function the same as `!=`.  
