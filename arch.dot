@@ -1,6 +1,6 @@
 digraph G {
 	get_maps -> parse_command
-    	parse_command -> parse_search -> search_target -> __bytes_search;
+    	parse_command -> parse_search -> search_value -> mode_search;
 	parse_command -> parse_cond -> search_cond;
       	parse_command -> parse_watch -> watch_value;
         parse_command -> parse_delete;

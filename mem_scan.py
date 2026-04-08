@@ -71,7 +71,7 @@ def get_maps(pid: str) -> list[tuple[int, int]]:
             addr_maps.append((start, end))
     return addr_maps
             
-def __bytes_search(buf: bytes, step: int, value: bytes) -> Iterator[int]:
+def mode_search(buf: bytes, step: int, value: bytes) -> Iterator[int]:
     if ALIGN:
         for off in range(0, len(buf), step):
             if buf[off:off+step] == value:
@@ -84,7 +84,7 @@ def __bytes_search(buf: bytes, step: int, value: bytes) -> Iterator[int]:
             offset = off + step
             yield off
 
-def search_target(addr_maps: list[tuple[int, int]], target_value: bytes, step: int) -> list[str]:
+def search_value(addr_maps: list[tuple[int, int]], target_value: bytes, step: int) -> list[str]:
     addr_list: list[str] = []
     with open("/proc/"+pid+"/mem", "rb") as mem:
         for addr_map in addr_maps:
@@ -97,7 +97,7 @@ def search_target(addr_maps: list[tuple[int, int]], target_value: bytes, step: i
                 buf: bytes = mem.read(size)
             except OSError:
                 continue
-            addrs = map(lambda x: hex(start + x), __bytes_search(buf, step, target_value))
+            addrs = map(lambda x: hex(start + x), mode_search(buf, step, target_value))
             addr_list.extend(list(addrs))
     return addr_list
 
@@ -355,7 +355,7 @@ def parse_search(ori_value_info: dict) -> bool:
             DEBUG("Here should not be arrived.",
                   "Here should not be arrived.")
             return FAILURE
-    ori_value_info["addr_list"]  = search_target(addr_maps, target_value, ori_value_info["width"])
+    ori_value_info["addr_list"] = search_value(addr_maps, target_value, ori_value_info["width"])
     return SUCCESS
 
 def parse_cond(ori_value_info: dict, command: list[str], op: Callable) -> bool:
@@ -366,9 +366,9 @@ def parse_cond(ori_value_info: dict, command: list[str], op: Callable) -> bool:
         new_value = ori_value_info["value"]
     if ori_value_info["type"] == "str":
         if command[0] not in ["+", "-"]:
-            ori_value_info["value"] = new_value = __str(" ".join(command[1:]))
+            ori_value_info["value"] = __str(" ".join(command[1:]))
             ori_value_info["width"] = len(new_value)
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, op)
+            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, ori_value_info["value"], op)
         else:
             print("`str` type do not accept '+/-' oprator.", file=sys.stderr)
             return FAILURE
