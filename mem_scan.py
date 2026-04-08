@@ -9,7 +9,7 @@ import signal
 from collections.abc import Callable
 from typing import Any, Iterator
 
-DEBUG_V = True
+DEBUG_V = False
 if DEBUG_V:
     def DEBUG(debug_warning: str, run_warning: str):
         assert False, debug_warning
@@ -39,7 +39,7 @@ EPS64   = 1e-15
 class Float(float):
     def __new__(cls, value, ex_type = "f32"):
         if ex_type not in ("f32", "f64"):
-            raise TypeError("Float required `f32/f64` for second argv only.")
+            raise TypeError("Float requires f32/f64 for the second argument.")
         obj = super().__new__(cls, value)
         obj.ex_type = ex_type
         return obj
@@ -390,7 +390,7 @@ def parse_cond(ori_value_info: dict, command: list[str], op: Callable) -> bool:
             ori_value_info["width"] = len(new_value)
             ori_value_info["addr_list"] = search_cond(pid, ori_value_info, ori_value_info["value"], op)
         else:
-            print("`str` type do not accept '+/-' oprator.", file=sys.stderr)
+            print("`str` type does not support `+/-` operators.", file=sys.stderr)
             return FAILURE
     elif ori_value_info["type"] in SEARCH_TYPE[1:]:
         ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, op)
@@ -415,7 +415,7 @@ def __refresher(refresh: bool, refresh_time: float):
 
 def parse_watch(ori_value_info: dict, command: list[str]) -> bool:
     if not ori_value_info["addr_list"]:
-        print("Please search a value first.", file=sys.stderr)
+        print("Please search for a value first..", file=sys.stderr)
         return FAILURE
     ord_addr_list: list[tuple[int, str]]|bool = list(enumerate(ori_value_info["addr_list"]))
     refresh = False
@@ -478,7 +478,7 @@ def parse_delete(ori_value_info: dict, command: list[str]) -> bool:
 
 def parse_set(ori_value_info: dict, command: list[str]) -> bool:
     if not ori_value_info["addr_list"]:
-        print("Please search a value first.", file=sys.stderr)
+        print("Please search for a value first..", file=sys.stderr)
         return FAILURE
     if len(command) < 2:
         print("`set` requires a value.", file=sys.stderr)
@@ -513,7 +513,7 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
         case "u8":
             if mod_value > MAX_U8 or mod_value < 0:
-                print("`u8` only supports 1-byte values.", file=sys.stderr)
+                print("`u8` only supports 1-byte non-negative values.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
         case "i16":
@@ -523,7 +523,7 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
         case "u16":
             if mod_value > MAX_U16 or mod_value < 0:
-                print("`u16` only supports 2-byte values.", file=sys.stderr)
+                print("`u16` only supports 2-byte non-negative values.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
         case "i32":
@@ -622,12 +622,12 @@ def parse_command(pid, addr_maps):
                 ori_value_info["addr_list"] = []
             else:
                 DEBUG(f"`{command[1]}` have not achived.",
-                      f"Unknown type `{command[1]}`. Valid types: i32, i64, u32, u64, f32, f64, str.")
+                      f"Unknown type `{command[1]}`. Valid types: str, i8, i16, i32, i64, u32, u8, u16, u64, f32, f64.")
 
         elif command[0] in ["=", "!=", "<", ">", "+", "-"]:
             if not ori_value_info["addr_list"]:
                 if command[0] in ["+", "-"]:
-                    print(f"`{command[0]}` search for first time is not allowed.", file=sys.stderr)
+                    print(f"`{command[0]}` cannot be used for the first search.", file=sys.stderr)
                     continue
                 else:
                     if (cond_value := __auto_trans_value(ori_value_info["type"], command[1])) is FAILURE:
@@ -690,7 +690,7 @@ def parse_command(pid, addr_maps):
                                 continue
                             ori_value_info["value"] -= cond_value
                 else:
-                    print(f"`{command[0]}` do not allow to accept so much value.", file=sys.stderr)
+                    print(f"`{command[0]}` does not accept so many values.", file=sys.stderr)
                 list_addr(ori_value_info["addr_list"])
 
 
@@ -707,6 +707,9 @@ def parse_command(pid, addr_maps):
                 continue
 
         elif command[0] == "reset":
+            if len(command) > 1:
+                print("`reset` does not need an argument.")
+                continue
             ori_value_info["value"] = None
             ori_value_info["addr_list"] = []
 
