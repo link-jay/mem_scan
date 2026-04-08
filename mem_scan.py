@@ -299,73 +299,63 @@ def parse_search(ori_value_info: dict) -> bool:
             print("`str` type must use align mode; automatically switching to align mode.")
             global ALIGN; ALIGN = False
             ori_value_info["width"] = len(bytes(ori_value_info["value"], "utf-8"))
-            ori_value_info["addr_list"]  = search_target(addr_maps, target_value, ori_value_info["width"])
         case "i8":
             if ori_value_info["value"] > MAX_I8 or ori_value_info["value"] < -MAX_I8:
                 print("`i8` only supports 1-byte values. Use `i16` for larger values.", file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 1
-            ori_value_info["addr_list"]  = search_target(addr_maps, target_value, 1)
         case "u8":
             if ori_value_info["value"] > MAX_U8 or ori_value_info["value"] < 0:
                 print("`u8` only supports 1-byte values. Use `u16` for larger values.", file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 1
-            ori_value_info["addr_list"]  = search_target(addr_maps, target_value, 1)
         case "i16":
             if ori_value_info["value"] > MAX_I16 or ori_value_info["value"] < -MAX_I16:
                 print("`i16` only supports 2-byte values. Use `i32` for larger values.", file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 2
-            ori_value_info["addr_list"]  = search_target(addr_maps, target_value, 2)
         case "u16":
             if ori_value_info["value"] > MAX_I16 or ori_value_info["value"] < 0:
                 print("`u16` only supports 2-byte values. Use `u32` for larger values.", file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 2
-            ori_value_info["addr_list"]  = search_target(addr_maps, target_value, 2)
         case "i32":
             if ori_value_info["value"] > MAX_I32 or ori_value_info["value"] < -MAX_I32:
                 print("`i32` only supports 4-byte values. Use `i64` for larger values.", file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 4
-            ori_value_info["addr_list"]  = search_target(addr_maps, target_value, 4)
         case "u32":
             if ori_value_info["value"] > MAX_U32 or ori_value_info["value"] < 0:
                 print("`u32` only supports 4-byte non-negative values. Use `i64/u64` for larger values.", file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 4
-            ori_value_info["addr_list"]  = search_target(addr_maps, target_value, 4)
         case "i64":
             if ori_value_info["value"] > MAX_I64 or ori_value_info["value"] < -MAX_I64:
                 print("`i64` only supports 8-byte values.", file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 8
-            ori_value_info["addr_list"]  = search_target(addr_maps, target_value, 8)
         case "u64":
             if ori_value_info["value"] > MAX_U64 or ori_value_info["value"] < 0:
                 print("`u64` only supports 8-byte non-negative values.", file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 8
-            ori_value_info["addr_list"]  = search_target(addr_maps, target_value, 8)
         case "f32":
             if (ori_value_info["value"] > MAX_F32 or ori_value_info["value"] < -MAX_F32
                 or -MIN_F32 < ori_value_info["value"] < 0 or 0 < ori_value_info["value"] < MIN_F32):
                 print("`f32` only supports 4-byte values.", file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 4
-            ori_value_info["addr_list"]  = search_target(addr_maps, target_value, 4)
         case "f64":
             if (ori_value_info["value"] > MAX_F64 or ori_value_info["value"] < -MAX_F64
                 or -MIN_F64 < ori_value_info["value"] < 0 or 0 < ori_value_info["value"] < MIN_F64):
                 print("`f64` only supports 8-byte values.", file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 8
-            ori_value_info["addr_list"]  = search_target(addr_maps, target_value, 8)
         case _:
             DEBUG("Here should not be arrived.",
                   "Here should not be arrived.")
             return FAILURE
+    ori_value_info["addr_list"]  = search_target(addr_maps, target_value, ori_value_info["width"])
     return SUCCESS
 
 def parse_cond(ori_value_info: dict, command: list[str], op: Callable) -> bool:
