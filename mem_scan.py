@@ -370,71 +370,31 @@ def parse_search(ori_value_info: dict) -> bool:
             return FAILURE
     return SUCCESS
 
-# TODO: 合并逻辑
 def parse_cond(ori_value_info: dict, command: list[str], op: Callable) -> bool:
     if (new_value := __auto_trans_value(ori_value_info["type"], command[1])) is FAILURE:
         return FAILURE
-    match ori_value_info["type"]:
-        case "str":
-            ori_value_info["value"] = new_value = __str(" ".join(command[1:]))
-            ori_value_info["width"] = len(new_value)
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, op)
-        case "i8":
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, op)
-        case "u8":
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, op)
-        case "i16":
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, op)
-        case "u16":
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, op)
-        case "i32":
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, op)
-        case "u32":
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, op)
-        case "i64":
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, op)
-        case "u64":
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, op)
-        case "f32":
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, op)
-        case "f64":
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, op)
-        case _:
-            DEBUG(f"{op} `{ori_value_info["value_type"]}` have not achieved.",
-                  "Here should not be arrived.")
-            return FAILURE
+    if ori_value_info["type"] == "str":
+        ori_value_info["value"] = new_value = __str(" ".join(command[1:]))
+        ori_value_info["width"] = len(new_value)
+        ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, op)
+    elif ori_value_info["type"] in SEARCH_TYPE[1:]:
+        ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, op)
+    else:
+        DEBUG(f"{op} `{ori_value_info["value_type"]}` have not achieved.",
+              "Here should not be arrived.")
+        return FAILURE
     return SUCCESS
 
-# TODO: 合并逻辑
 def parse_cond2(ori_value_info: dict, command: list, op: Callable) -> bool:
     if ori_value_info["type"] == str:
         print("`str` type do not accept '+/-' oprator.", file=sys.stderr)
         return FAILURE
-    match ori_value_info["type"]:
-        case "i8":
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, ori_value_info["value"], op)
-        case "u8":
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, ori_value_info["value"], op)
-        case "i16":
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, ori_value_info["value"], op)
-        case "u16":
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, ori_value_info["value"], op)
-        case "i32":
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, ori_value_info["value"], op)
-        case "u32":
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, ori_value_info["value"], op)
-        case "i64":
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, ori_value_info["value"], op)
-        case "u64":
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, ori_value_info["value"], op)
-        case "f32":
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, ori_value_info["value"], op)
-        case "f64":
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, ori_value_info["value"], op)
-        case _:
-            DEBUG(f"{op} `{ori_value_info["value_type"]}` have not achieved.",
-                  "Here should not be arrived.")
-            return FAILURE
+    elif ori_value_info["type"] in SEARCH_TYPE[1:]:
+        ori_value_info["addr_list"] = search_cond(pid, ori_value_info, ori_value_info["value"], op)
+    else:
+        DEBUG(f"{op} `{ori_value_info["value_type"]}` have not achieved.",
+              "Here should not be arrived.")
+        return FAILURE
     return SUCCESS
 
 def __refresher(refresh: bool, refresh_time: float):
