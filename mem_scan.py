@@ -588,118 +588,67 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
                 print("String length must not exceed the original length.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
-            @__refresher(refresh, refresh_time)
-            def __modify_str():
-                modify_target(ori_value_info["addr_list"], b_value)
-                print(f"Set value to {mod_value}")
-            __modify_str()
         case "i8":
             if mod_value > MAX_I8 or mod_value < -MAX_I8:
                 print("`i8` only supports 1-byte values.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
-            @__refresher(refresh, refresh_time)
-            def __modify_i8():
-                modify_target(ori_value_info["addr_list"], b_value)
-                print(f"Set value to {mod_value}")
-            __modify_i8()
         case "u8":
             if mod_value > MAX_U8 or mod_value < 0:
                 print("`u8` only supports 1-byte values.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
-            @__refresher(refresh, refresh_time)
-            def __modify_u8():
-                modify_target(ori_value_info["addr_list"], b_value)
-                print(f"Set value to {mod_value}")
-            __modify_u8()
         case "i16":
             if mod_value > MAX_I16 or mod_value < -MAX_I16:
                 print("`i16` only supports 2-byte values.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
-            @__refresher(refresh, refresh_time)
-            def __modify_i16():
-                modify_target(ori_value_info["addr_list"], b_value)
-                print(f"Set value to {mod_value}")
-            __modify_i16()
         case "u16":
             if mod_value > MAX_U16 or mod_value < 0:
                 print("`u16` only supports 2-byte values.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
-            @__refresher(refresh, refresh_time)
-            def __modify_u16():
-                modify_target(ori_value_info["addr_list"], b_value)
-                print(f"Set value to {mod_value}")
-            __modify_u16()
         case "i32":
             if mod_value > MAX_I32 or mod_value < -MAX_I32:
                 print("`i32` only supports 4-byte values.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
-            @__refresher(refresh, refresh_time)
-            def __modify_i32():
-                modify_target(ori_value_info["addr_list"], b_value)
-                print(f"Set value to {mod_value}")
-            __modify_i32()
         case "u32":
             if mod_value > MAX_U32 or mod_value < 0:
                 print("`u32` only supports 4-byte non-negative values.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
-            @__refresher(refresh, refresh_time)
-            def __modify_u32():
-                modify_target(ori_value_info["addr_list"], b_value)
-                print(f"Set value to {mod_value}")
-            __modify_u32()
         case "i64":
             if mod_value > MAX_I64 or mod_value < -MAX_I64:
                 print("`i64` only supports 8-byte values.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
-            @__refresher(refresh, refresh_time)
-            def __modify_i64():
-                modify_target(ori_value_info["addr_list"], b_value)
-                print(f"Set value to {mod_value}")
-            __modify_i64()
         case "u64":
             if mod_value > MAX_U64 or mod_value < 0:
                 print("`i64` only supports 8-byte non-negative values.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
-            @__refresher(refresh, refresh_time)
-            def __modify_u64():
-                modify_target(ori_value_info["addr_list"], b_value)
-                print(f"Set value to {mod_value}")
-            __modify_u64()
         case "f32":
             if (mod_value > MAX_F32 or mod_value < -MAX_F32
                 or -MIN_F32 < mod_value < 0 or 0 < mod_value < MIN_F32):
                 print("`f32` only supports 4-byte values.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
-            @__refresher(refresh, refresh_time)
-            def __modify_f32():
-                modify_target(ori_value_info["addr_list"], b_value)
-                print(f"Set value to {mod_value}")
-            __modify_f32()
         case "f64":
             if (mod_value > MAX_F64 or mod_value < -MAX_F64
                 or -MIN_F64 < mod_value < 0 or 0 < mod_value < MIN_F64):
                 print("`f64` only supports 8-byte values.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
-            @__refresher(refresh, refresh_time)
-            def __modify_f64():
-                modify_target(ori_value_info["addr_list"], b_value)
-                print(f"Set value to {mod_value}")
-            __modify_f64()
         case _:
             DEBUG(f"set `" + ori_value_info["type"] + "` have not achieved.",
                   "Here should not be arrived.")
             return FAILURE
-
+    @__refresher(refresh, refresh_time)
+    def __modify_value():
+        modify_target(ori_value_info["addr_list"], b_value)
+        print(f"Set value to {mod_value}")
+    __modify_value()
     ori_value_info["value"] = mod_value
     return SUCCESS
 
