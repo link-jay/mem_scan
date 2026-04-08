@@ -1,10 +1,10 @@
 # mem_scan
 A memory scan program in python.  
-This is a Python-based memory scanning program built on the Linux virtual memory system. Its core functionality is implemented by parsing the `/proc/[pid]/maps` and `/proc/[pid]/mem` files.  
-The program allows users to input a target value to locate corresponding memory addresses. The data width used for scanning is determined by the specified data type, and can be adjusted via the alignment mode. Non-search commands and conditional search operations depend on the data type set by the preceding search command, which is automatically recorded when the first search is executed.  
+This is a Python-based memory scanning program built on the Linux virtual memory system. Its core functions are implemented by parsing /proc/[pid]/maps and reading /proc/[pid]/mem.  
+The program allows users to input a target value to locate corresponding memory addresses. The data width used for scanning is determined by the specified data type and can be adjusted via alignment mode. Non-search commands and conditional search operations depend on the data type set by the preceding search command, which is identified by the type field.  
 
 ## Feature
-* [ ] memscan-like commands
+* [x] memscan-like commands
 * [x] align search
 * [x] find and modify str
 * [x] find and modify i8/i16/i32/i64/u8/u16/u32/u64
@@ -23,10 +23,10 @@ The program allows users to input a target value to locate corresponding memory 
 `sh cmd`: Run a shell command temporarily.  
 `type [i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|str]`: Set the value type for search (default: `i32`).  
 `str|num`: Search for the specified `str/num` value. Repeating is equivalent to using `=`.  
-`= [str|num]`: Search again using the last search result. No argument means search for the original value; a new `str/num` argument means search for the new value of the same type.  
-`>/< [str|num]`: Search for values greater/less than the specified `num`. No argument means search relative to the original value. For `str`, these commands function the same as `!=`.  
-`!=`: Search for values not equal to the specified `str/num`. No argument means search relative to the original value.  
-`+/- [num]`: Search for values by adding or subtracting `num`. If no argument is provided, the behavior is the same as `>/<`. Not allowed for strings.  
+`= [str|num]`: Search again using the last search result. No argument means search for the original value; a new `str/num` argument means search for the new value of the same type. Acts like a direct search on first use.  
+`>/< [str|num]`: Search for values greater/less than the specified `num`. No argument means search relative to the original value. For `str`, these commands function the same as `!=`. Can be used for the first search.  
+`!=`: Search for values not equal to the specified `str/num`. No argument means search relative to the original value. Can be used for the first search.  
+`+/- [num]`: Search for values by adding or subtracting `num`. If no argument is provided, the behavior is the same as `>/<`. Not allowed for strings. Can not be used for the first search.  
 `reset`: Reset the search results.  
 `list`: List all addresses found by search commands.  
 `watch [[number][/[time]]]`: View values in the address list. No argument: view all values; a number: view the specified value. Append `/[time]` for real-time monitoring (default interval: 2 seconds).  
