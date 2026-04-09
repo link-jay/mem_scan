@@ -52,7 +52,7 @@ $ ./test/test.out
 ```
 
 ```bash
-# ./scanmem $(test1.out) 
+# ./mem_scan $(test1.out) 
 > str hello
 find it at 0x...
 find it at 0x...
