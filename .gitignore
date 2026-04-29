@@ -2,7 +2,4 @@ venv/
 */.mypy_cache/
 TAGS
 test/test.out
-test/script.py
-/test/commands.txt
 /__pycache__/
-/Makefile

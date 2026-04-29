@@ -14,9 +14,13 @@ DEBUG_V = False
 if DEBUG_V:
     def DEBUG(debug_warning: str, run_warning: str):
         assert False, debug_warning
+    def search_for(addr_maps: list[tuple[int, int]], value_info: dict, op: Callable) -> list[str]:
+        return search_value(addr_maps, value_info, op)
 else:
     def DEBUG(debug_warning: str, run_warning: str):
         print(run_warning, file=sys.stderr)
+    def search_for(addr_maps: list[tuple[int, int]], value_info: dict, op: Callable) -> list[str]:
+        return search_value_with_thread(addr_maps, value_info, op)
 
 ALIGN   = True
 
@@ -77,6 +81,7 @@ def mode_search(buf: bytes, value_info: dict, op: Callable) -> Iterator[int]:
     step = value_info["width"]
     value_type = value_info["type"]
     if value_type == "str" and not op(1, 1):
+        value = __trans_bytes(value_type, value)
         offset = 0
         while True:
             off = buf.find(value, offset)
@@ -136,8 +141,6 @@ def search_value_with_thread(addr_maps: list[tuple[int, int]], value_info: dict,
                     task_pool.pop().join()
             except IndexError:
                 break
-            except AssertionError:
-                continue
         while task_pool != []:
             task_pool.pop().join()
     return addr_list
@@ -410,7 +413,7 @@ def parse_search(ori_value_info: dict, op: Callable = lambda x,y: x == y) -> boo
             DEBUG("Here should not be arrived.",
                   "Here should not be arrived.")
             return FAILURE
-    ori_value_info["addr_list"] = search_value_with_thread(addr_maps, ori_value_info, op)
+    ori_value_info["addr_list"] = search_for(addr_maps, ori_value_info, op)
     return SUCCESS
 
 def parse_cond(ori_value_info: dict, command: list[str], op: Callable) -> bool:
@@ -421,9 +424,7 @@ def parse_cond(ori_value_info: dict, command: list[str], op: Callable) -> bool:
         new_value = ori_value_info["value"]
     if ori_value_info["type"] == "str":
         if command[0] not in ["+", "-"]:
-            ori_value_info["value"] = Str(" ".join(command[1:]))
-            ori_value_info["width"] = len(new_value)
-            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, ori_value_info["value"], op)
+            ori_value_info["addr_list"] = search_cond(pid, ori_value_info, Str(" ".join(command[1:])), op)
         else:
             print("`str` type does not support `+/-` operators.", file=sys.stderr)
             return FAILURE
@@ -536,7 +537,7 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
         return FAILURE
     match ori_value_info["type"]:
         case "str":
-            mod_value = set_arg_value[0]
+            mod_value = set_arg_value[0]; ori_value_info["width"] = len(set_arg_value[0])
             if len(bytes(mod_value, "utf-8")) > ori_value_info["width"]:
                 print("String length must not exceed the original length.", file=sys.stderr)
                 return FAILURE
@@ -664,8 +665,14 @@ def parse_command(pid, addr_maps):
                 if command[0] in ["+", "-"]:
                     print(f"`{command[0]}` cannot be used for the first search.", file=sys.stderr)
                     continue
-                else:
-                    if (cond_value := __auto_trans_value(ori_value_info["type"], command[1])) is FAILURE:
+                if len(command) > 2 and ori_value_info["type"] != "str":
+                    print("`" + ori_value_info["type"] + "`" + " requires exactly 0 or 1 argument.", file=sys.stderr)
+                    continue
+                elif len(command) == 1:
+                    print(f"`{command[0]}` requires accept a argument.", file=sys.stderr)
+                    continue
+                elif len(command) == 2 or ori_value_info["type"] == "str":
+                    if (cond_value := __auto_trans_value(ori_value_info["type"], " ".join(command[1:]))) is FAILURE:
                         continue
                     ori_value_info["value"] = cond_value
                     match command[0]:
@@ -700,8 +707,8 @@ def parse_command(pid, addr_maps):
                         case ">" | "+":
                             if parse_cond(ori_value_info, command, lambda x,y: x > y) is FAILURE:
                                 continue
-                elif len(command) == 2:
-                    if (cond_value := __auto_trans_value(ori_value_info["type"], command[1])) is FAILURE:
+                elif len(command) == 2 or ori_value_info["type"] == "str":
+                    if (cond_value := __auto_trans_value(ori_value_info["type"], " ".join(command[1:]))) is FAILURE:
                         continue
                     match command[0]:
                         case "=":
