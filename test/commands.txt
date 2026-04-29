@@ -1,0 +1,168 @@
+help
+
+sh echo -------- i32 --------
+status
+align off
+-189223
+reset
+align on
+-189223
+=
+=
+=
+< 0
+< 0
+set 12
+> 0
+> 0
+=
+=
+set 11
+< 12
+> 10
+watch 0
+watch 1
+watch
+sh echo -------- u32 --------
+type u32
+status
+align off
+2147483647
+reset
+align on
+2147483647
+=
+=
+=
+> 0
+> 0
+set 12
+< 15
+< 15
+=
+=
+set 11
+< 12
+> 10
+watch 0
+watch 1
+watch
+sh echo -------- i64 --------
+type i64
+status
+align off
+-7234567890
+reset
+align on
+-7234567890
+=
+=
+=
+< 0
+< 0
+set 12
+> 0
+> 0
+=
+=
+set 11
+< 12
+> 10
+watch 0
+watch 1
+watch
+sh echo -------- u64 --------
+type u64
+status
+align off
+8589934592
+reset
+align on
+8589934592
+=
+=
+=
+> 0
+> 0
+set 12
+< 15
+< 15
+=
+=
+set 11
+< 12
+> 10
+watch 0
+watch 1
+watch
+sh echo -------- f32 --------
+type f32
+status
+align off
+3.14156
+reset
+align on
+3.14156
+=
+=
+=
+< 4
+< 4
+set 12.12
+> 0
+> 0
+=
+=
+set 11.11
+< 12
+> 10
+watch 0
+watch 1
+watch
+sh echo -------- f64 --------
+type f64
+status
+align off
+1.7382948908
+reset
+align on
+1.7382948908
+=
+=
+=
+< 2
+< 2
+set 12.12
+> 0
+> 0
+=
+=
+set 11.11
+< 12
+> 10
+watch 0
+watch 1
+watch
+sh echo -------- str --------
+type str
+status
+hello, world
+=
+=
+=
+< 0
+< 0
+set hello, foo
+watch 0
+watch 1
+watch
+> 0
+> 0
+=
+=
+set byebye,
+< 12
+> 10
+watch 0
+watch 1
+watch
