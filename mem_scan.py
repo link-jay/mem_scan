@@ -8,6 +8,7 @@ import subprocess
 import signal
 from collections.abc import Callable
 from typing import Any, Iterator
+import threading
 
 DEBUG_V = False
 if DEBUG_V:
@@ -106,6 +107,40 @@ def mode_search(buf: bytes, value_info: dict, op: Callable) -> Iterator[int]:
                     mem_value = __bytes_trans(value_type, buf[off:off+step])
                     if op(mem_value, value):
                         yield off
+
+def search_value_with_thread(addr_maps: list[tuple[int, int]], value_info: dict, op: Callable) -> list[str]:
+    addr_list: list[str] = []
+    inner_maps = addr_maps[:]
+    task_pool: list[threading.Thread] = []
+    def search_task(addr_map: tuple[int, int]):
+        offset     = 0
+        start: int = addr_map[0]
+        end  : int = addr_map[1]
+        size : int = end - start
+        try:
+            mem.seek(start)
+            buf: bytes = mem.read(size)
+        except OSError:
+            return
+        addrs = map(lambda x: hex(start + x), mode_search(buf, value_info, op))
+        nonlocal addr_list
+        addr_list.extend(list(addrs))
+    with open("/proc/"+pid+"/mem", "rb") as mem:
+        while inner_maps != []:
+            try:
+                for i in range(4):
+                    addr_map = inner_maps.pop()
+                    task_pool.append(threading.Thread(target=search_task, args=(addr_map,)))
+                    task_pool[-1].start()
+                while task_pool != []:
+                    task_pool.pop().join()
+            except IndexError:
+                break
+            except AssertionError:
+                continue
+        while task_pool != []:
+            task_pool.pop().join()
+    return addr_list
 
 def search_value(addr_maps: list[tuple[int, int]], value_info: dict, op: Callable) -> list[str]:
     addr_list: list[str] = []
@@ -375,7 +410,7 @@ def parse_search(ori_value_info: dict, op: Callable = lambda x,y: x == y) -> boo
             DEBUG("Here should not be arrived.",
                   "Here should not be arrived.")
             return FAILURE
-    ori_value_info["addr_list"] = search_value(addr_maps, ori_value_info, op)
+    ori_value_info["addr_list"] = search_value_with_thread(addr_maps, ori_value_info, op)
     return SUCCESS
 
 def parse_cond(ori_value_info: dict, command: list[str], op: Callable) -> bool:
