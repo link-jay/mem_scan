@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import sys
 import time
 import readline
@@ -10,17 +9,17 @@ from collections.abc import Callable
 from typing import Any, Iterator
 import threading
 
-DEBUG_V = False
-if DEBUG_V:
-    def DEBUG(debug_warning: str, run_warning: str):
-        assert False, debug_warning
-    def search_for(addr_maps: list[tuple[int, int]], value_info: dict, op: Callable) -> list[str]:
-        return search_value(addr_maps, value_info, op)
-else:
-    def DEBUG(debug_warning: str, run_warning: str):
+DEBUG = False
+if DEBUG == False:                           # NORMAL模式
+    def debug_log(debug_warning: str, run_warning: str):
         print(run_warning, file=sys.stderr)
     def search_for(addr_maps: list[tuple[int, int]], value_info: dict, op: Callable) -> list[str]:
         return search_value_with_thread(addr_maps, value_info, op)
+else:                           # DEBUG模式
+    def debug_log(debug_warning: str, run_warning: str):
+        assert False, debug_warning
+    def search_for(addr_maps: list[tuple[int, int]], value_info: dict, op: Callable) -> list[str]:
+        return search_value(addr_maps, value_info, op)
 
 ALIGN   = True
 
@@ -291,7 +290,7 @@ def __auto_trans_value(value_type: str, ori_value: str | Str) -> Any:
         case "str":
             pass
         case _:
-            DEBUG("type" + ori_value + "have not achived.",
+            debug_log("type" + ori_value + "have not achived.",
                   "Here should not be arrived.")
             return FAILURE
     return value
@@ -410,7 +409,7 @@ def parse_search(ori_value_info: dict, op: Callable = lambda x,y: x == y) -> boo
                 return FAILURE
             ori_value_info["width"] = 8
         case _:
-            DEBUG("Here should not be arrived.",
+            debug_log("Here should not be arrived.",
                   "Here should not be arrived.")
             return FAILURE
     ori_value_info["addr_list"] = search_for(addr_maps, ori_value_info, op)
@@ -431,7 +430,7 @@ def parse_cond(ori_value_info: dict, command: list[str], op: Callable) -> bool:
     elif ori_value_info["type"] in SEARCH_TYPE[1:]:
         ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, op)
     else:
-        DEBUG(f"{op} `{ori_value_info["value_type"]}` have not achieved.",
+        debug_log(f"{op} `{ori_value_info["value_type"]}` have not achieved.",
               "Here should not be arrived.")
         return FAILURE
     return SUCCESS
@@ -451,7 +450,7 @@ def __refresher(refresh: bool, refresh_time: float):
 
 def parse_watch(ori_value_info: dict, command: list[str]) -> bool:
     if not ori_value_info["addr_list"]:
-        print("Please search for a value first..", file=sys.stderr)
+        print("Please search for a value first.", file=sys.stderr)
         return FAILURE
     ord_addr_list: list[tuple[int, str]]|bool = list(enumerate(ori_value_info["addr_list"]))
     refresh = False
@@ -486,7 +485,7 @@ def parse_watch(ori_value_info: dict, command: list[str]) -> bool:
         print("`watch` received too many arguments. Please check.", file=sys.stderr)
         return FAILURE
     if ori_value_info["type"] not in SEARCH_TYPE:
-        DEBUG("`" + ori_value_info["type"] + "` have not achieved.",
+        debug_log("`" + ori_value_info["type"] + "` have not achieved.",
               "Here should not be arrived.")
     # __refresher(refresh, refresh_time) -> wrapper
     # __str_refresher = wrapper(__str_refresher) -> inner
@@ -514,7 +513,7 @@ def parse_delete(ori_value_info: dict, command: list[str]) -> bool:
 
 def parse_set(ori_value_info: dict, command: list[str]) -> bool:
     if not ori_value_info["addr_list"]:
-        print("Please search for a value first..", file=sys.stderr)
+        print("Please search for a value first.", file=sys.stderr)
         return FAILURE
     if len(command) < 2:
         print("`set` requires a value.", file=sys.stderr)
@@ -595,7 +594,7 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
         case _:
-            DEBUG(f"set `" + ori_value_info["type"] + "` have not achieved.",
+            debug_log(f"set `" + ori_value_info["type"] + "` have not achieved.",
                   "Here should not be arrived.")
             return FAILURE
     @__refresher(refresh, refresh_time)
@@ -657,7 +656,7 @@ def parse_command(pid, addr_maps):
                 ori_value_info["width"] = 0
                 ori_value_info["addr_list"] = []
             else:
-                DEBUG(f"`{command[1]}` have not achived.",
+                debug_log(f"`{command[1]}` have not achived.",
                       f"Unknown type `{command[1]}`. Valid types: str, i8, i16, i32, i64, u32, u8, u16, u64, f32, f64.")
 
         elif command[0] in ["=", "!=", "<", ">", "+", "-"]:
@@ -750,26 +749,29 @@ def parse_command(pid, addr_maps):
 
         elif command[0] == "reset":
             if len(command) > 1:
-                print("`reset` does not need an argument.")
+                print("`reset` does not need an argument.", file=sys.stderr)
                 continue
             ori_value_info["value"] = None
             ori_value_info["addr_list"] = []
 
         elif command[0] == "align":
+            if ori_value_info["type"] == "str":
+                print("`str` type must use align mode; automatically switching to align mode", file=sys.stderr)
+                continue
             if len(command) != 2:
-                print("`align` requires exactly 2 argument. Valid value: on or off.")
+                print("`align` requires exactly 2 argument. Valid value: on or off.", file=sys.stderr)
                 continue
             if command[1] == "on":
                 ALIGN = True
             elif command[1] == "off":
                 ALIGN = False
             else:
-                print("`align` only accept `on` or `off`.")
+                print("`align` only accept `on` or `off`.", file=sys.stderr)
                 continue
 
         elif command[0] == "status":
             if len(command) > 1:
-                print("`status` does not need an argument.")
+                print("`status` does not need an argument.", file=sys.stderr)
                 continue
             print(f"type: \t{ori_value_info['type']}\n"
                   f"value:\t{ori_value_info['value']}")
@@ -778,7 +780,7 @@ def parse_command(pid, addr_maps):
 
         else:
             if len(command) > 1 and ori_value_info["type"] != "str":
-                DEBUG(f"{command[0]} have not achived.",
+                debug_log(f"{command[0]} have not achived.",
                       "Unknown command. Please use `help` to check.")
                 continue
             temp_value_info = ori_value_info.copy()
