@@ -1,6 +1,9 @@
 digraph G {
 	get_maps -> parse_command
-    	parse_command -> parse_search -> search_value -> mode_search;
+    	parse_command -> parse_search -> search_for -> NORMAL
+	NORMAL -> search_value_with_thread -> mode_search;
+	search_for -> DEBUG
+	DEBUG -> search_value -> mode_search;
 	parse_command -> parse_cond -> search_cond;
 	parse_cond -> parse_search
       	parse_command -> parse_watch -> watch_value;

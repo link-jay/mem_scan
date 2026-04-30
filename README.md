@@ -16,7 +16,7 @@ The program allows users to input a target value to locate corresponding memory 
 * [x] modify value continuously
 * [x] monitor value continuously
 * [x] support shell command
-* [ ] multithreading
+* [x] multithreading
 
 ## Command
 

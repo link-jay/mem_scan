@@ -188,6 +188,7 @@ def __bytes_trans(value_type: str, b_value: bytes) -> Any:
             normal_value = struct.unpack("<d", b_value)[0]
     return normal_value
     
+# TODO: 添加多线程，少于一定数量或DEBUG模式启用单线程，多于一定数量启用多线程
 def search_cond(pid: str, value_info: dict, new_value: Any, op: Callable) -> list[str]:
     new_addr_list = []
     with open("/proc/"+pid+"/mem", "rb") as mem:
