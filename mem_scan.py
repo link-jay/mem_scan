@@ -22,6 +22,13 @@ else:                           # DEBUG模式
     def search_for(addr_maps: list[tuple[int, int]], value_info: dict, op: Callable) -> list[str]:
         return search_value(addr_maps, value_info, op)
 
+# NOTE: 获取物理核心数/最大效率线程数
+with open("/proc/cpuinfo") as f:
+    for idx, line in enumerate(f):
+        if idx == 12:
+            CPU_CORES = int(line.split()[-1])
+            break
+
 ALIGN   = True
 
 FAILURE = False
@@ -137,7 +144,7 @@ def search_value_with_thread(addr_maps: list[tuple[int, int]], value_info: dict,
     with open("/proc/"+pid+"/mem", "rb") as mem:
         while inner_maps != []:
             try:
-                for i in range(4):
+                for i in range(CPU_CORES):
                     addr_map = inner_maps.pop()
                     task_pool.append(threading.Thread(target=search_task, args=(addr_map,)))
                     task_pool[-1].start()
@@ -801,12 +808,20 @@ def parse_command(pid, addr_maps):
                     continue
             list_addr(ori_value_info["addr_list"])
             
-if __name__ == "__main__":
-    if len(sys.argv) == 1: assert False, "mem_scan requires a PID argument."
-    elif len(sys.argv) > 3: assert False, "mem_scan accept too many arguments."
+def parse_args():
+    global DEBUG
+    if len(sys.argv) == 1:
+        assert False, "mem_scan requires a PID argument."
+    elif len(sys.argv) > 3:
+        assert False, "mem_scan accept too many arguments."
     elif len(sys.argv) == 3:
-        if sys.argv[1] == "--debug": DEBUG = True
-        else: assert False, "Unkown argument."
+        if sys.argv[1] == "--debug":
+            DEBUG = True
+        else:
+            assert False, "Unkown argument."
+
+if __name__ == "__main__":
+    parse_args()
     pid       = sys.argv[-1]
     addr_maps = get_maps(pid)
     for addr_map in addr_maps:

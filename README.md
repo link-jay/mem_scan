@@ -1,7 +1,7 @@
 # mem_scan
 A memory scan program in python.  
 This is a Python-based memory scanning program built on the Linux virtual memory system. Its core functions are implemented by parsing /proc/[pid]/maps and reading /proc/[pid]/mem.  
-The program allows users to input a target value to locate corresponding memory addresses. The data width used for scanning is determined by the specified data type and can be adjusted via alignment mode. Non-search commands and conditional search operations depend on the data type set by the preceding search command, which is identified by the type field.  
+The program allows users to input a target value to locate corresponding memory addresses. The data width used for scanning is determined by the specified data type and can be adjusted via alignment mode. Non-search commands and conditional search operations depend on the data type set by the preceding search command, which is identified by the type field. It supposes to use multithreading in normal mode.  
 
 ## Feature
 * [x] memscan-like commands
