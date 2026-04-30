@@ -18,10 +18,12 @@ set 12
 =
 =
 set 11
+!= 13
 < 12
 > 10
 watch 0
 watch 1
+delete 0
 watch
 sh echo -------- u32 --------
 type u32
@@ -42,10 +44,12 @@ set 12
 =
 =
 set 11
+!= 13
 < 12
 > 10
 watch 0
 watch 1
+delete 0
 watch
 sh echo -------- i64 --------
 type i64
@@ -66,10 +70,12 @@ set 12
 =
 =
 set 11
+!= 13
 < 12
 > 10
 watch 0
 watch 1
+delete 0
 watch
 sh echo -------- u64 --------
 type u64
@@ -90,10 +96,12 @@ set 12
 =
 =
 set 11
+!= 13
 < 12
 > 10
 watch 0
 watch 1
+delete 0
 watch
 sh echo -------- f32 --------
 type f32
@@ -114,10 +122,12 @@ set 12.12
 =
 =
 set 11.11
+!= 13
 < 12
 > 10
 watch 0
 watch 1
+delete 0
 watch
 sh echo -------- f64 --------
 type f64
@@ -138,14 +148,17 @@ set 12.12
 =
 =
 set 11.11
+!= 13
 < 12
 > 10
 watch 0
 watch 1
+delete 0
 watch
 sh echo -------- str --------
 type str
 status
+align on
 hello, world
 =
 =
@@ -155,14 +168,17 @@ hello, world
 set hello, foo
 watch 0
 watch 1
+delete 0
 watch
 > 0
 > 0
 =
 =
 set byebye,
+!= 13
 < 12
 > 10
 watch 0
 watch 1
+delete 0
 watch
