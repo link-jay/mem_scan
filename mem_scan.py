@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import sys
 import time
 import readline
@@ -20,6 +21,14 @@ else:                           # DEBUG模式
         assert False, debug_warning
     def search_for(addr_maps: list[tuple[int, int]], value_info: dict, op: Callable) -> list[str]:
         return search_value(addr_maps, value_info, op)
+
+# NOTE: 获取物理核心数/最大效率线程数
+with open("/proc/cpuinfo") as f:
+    for idx, line in enumerate(f):
+        if idx == 12:
+            CPU_CORES = int(line.split()[-1])
+            break
+THREAD_COUNTS = CPU_CORES
 
 ALIGN   = True
 
@@ -66,13 +75,17 @@ class Str(str):
 
 def get_maps(pid: str) -> list[tuple[int, int]]:
     addr_maps: list[tuple] = []
-    with open("/proc/"+pid+"/maps") as f:
-        for line in f:
-            addr, attr, *_ = line.split()
-            if "r" not in attr:
-                continue
-            start, end = [int(x, 16) for x in addr.split("-")]
-            addr_maps.append((start, end))
+    try:
+        with open("/proc/"+pid+"/maps") as f:
+            for line in f:
+                addr, attr, *_ = line.split()
+                if "r" not in attr:
+                    continue
+                start, end = [int(x, 16) for x in addr.split("-")]
+                addr_maps.append((start, end))
+    except FileNotFoundError:
+        print("Last argument must accept the pid of the target. Please check.", file=sys.stderr)
+        exit(1)
     return addr_maps
             
 def mode_search(buf: bytes, value_info: dict, op: Callable) -> Iterator[int]:
@@ -132,7 +145,7 @@ def search_value_with_thread(addr_maps: list[tuple[int, int]], value_info: dict,
     with open("/proc/"+pid+"/mem", "rb") as mem:
         while inner_maps != []:
             try:
-                for i in range(4):
+                for i in range(THREAD_COUNTS):
                     addr_map = inner_maps.pop()
                     task_pool.append(threading.Thread(target=search_task, args=(addr_map,)))
                     task_pool[-1].start()
@@ -188,7 +201,6 @@ def __bytes_trans(value_type: str, b_value: bytes) -> Any:
             normal_value = struct.unpack("<d", b_value)[0]
     return normal_value
     
-# TODO: 添加多线程，少于一定数量或DEBUG模式启用单线程，多于一定数量启用多线程
 def search_cond(pid: str, value_info: dict, new_value: Any, op: Callable) -> list[str]:
     new_addr_list = []
     with open("/proc/"+pid+"/mem", "rb") as mem:
@@ -384,7 +396,8 @@ def parse_search(ori_value_info: dict, op: Callable = lambda x,y: x == y) -> boo
             ori_value_info["width"] = 4
         case "u32":
             if ori_value_info["value"] > MAX_U32 or ori_value_info["value"] < 0:
-                print("`u32` only supports 4-byte non-negative values. Use `i64/u64` for larger values.", file=sys.stderr)
+                print("`u32` only supports 4-byte non-negative values. Use `i64/u64` for larger values.",
+                      file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 4
         case "i64":
@@ -477,7 +490,8 @@ def parse_watch(ori_value_info: dict, command: list[str]) -> bool:
                                                   "Refresh time for `watch` requires a non-negative numeric value.")) is FAILURE:
                     return FAILURE
                 if refresh_time < 0:
-                    print("Refresh time for `watch` requires a non-negative numeric value.", file=sys.stderr)
+                    print("Refresh time for `watch` requires a non-negative numeric value.",
+                          file=sys.stderr)
                     return FAILURE
         else:
             print("`watch` received too many arguments. Please check.", file=sys.stderr)
@@ -666,7 +680,8 @@ def parse_command(pid, addr_maps):
                     print(f"`{command[0]}` cannot be used for the first search.", file=sys.stderr)
                     continue
                 if len(command) > 2 and ori_value_info["type"] != "str":
-                    print("`" + ori_value_info["type"] + "`" + " requires exactly 0 or 1 argument.", file=sys.stderr)
+                    print("`" + ori_value_info["type"] + "`" + " requires exactly 0 or 1 argument.",
+                          file=sys.stderr)
                     continue
                 elif len(command) == 1:
                     print(f"`{command[0]}` requires accept a argument.", file=sys.stderr)
@@ -690,7 +705,8 @@ def parse_command(pid, addr_maps):
                                 continue
             else:
                 if len(command) > 2 and ori_value_info["type"] != "str":
-                    print("`" + ori_value_info["type"] + "`" + " requires exactly 0 or 1 argument.", file=sys.stderr)
+                    print("`" + ori_value_info["type"] + "`" + " requires exactly 0 or 1 argument.",
+                          file=sys.stderr)
                     continue
                 if len(command) == 1:
                     command.append(ori_value_info["value"])
@@ -757,7 +773,8 @@ def parse_command(pid, addr_maps):
 
         elif command[0] == "align":
             if ori_value_info["type"] == "str":
-                print("`str` type must use align mode; automatically switching to align mode", file=sys.stderr)
+                print("`str` type must use align mode; automatically switching to align mode",
+                      file=sys.stderr)
                 continue
             if len(command) != 2:
                 print("`align` requires exactly 2 argument. Valid value: on or off.", file=sys.stderr)
@@ -797,9 +814,40 @@ def parse_command(pid, addr_maps):
                     continue
             list_addr(ori_value_info["addr_list"])
             
+def parse_args():
+    global DEBUG
+    if len(sys.argv) == 1:
+        print("mem_scan requires a PID argument.", file=sys.stderr)
+        exit(1)
+    i = 1
+    while i < len(sys.argv) - 1:
+        if "--debug" in sys.argv and "-t" in sys.argv:
+            print("DEBUG mode uses a single thread by default. Modify the source code if custom thread configuration is required.",
+                  file=sys.stderr)
+            exit(1)
+        if sys.argv[i] == "--debug":
+            DEBUG = True
+        elif sys.argv[i] == "-t":
+            i += 1
+            if i < len(sys.argv) - 1:
+               try:
+                   THREAD_COUNTS = int(sys.argv[i])
+                   if THREAD_COUNTS > CPU_CORES:
+                       print("warn: too many threads.")
+               except ValueError:
+                   print("`-t` must accept a number argument.", file=sys.stderr)
+                   exit(1)
+            else:
+                   print("`-t` must accept a number argument.", file=sys.stderr)
+                   exit(1)
+        else:
+            print("Unkown argument.", file=sys.stderr)
+            exit(1)
+        i += 1
+
 if __name__ == "__main__":
-    assert len(sys.argv) == 2, "Script requires a PID argument."
-    pid       = sys.argv[1]
+    parse_args()
+    pid = sys.argv[-1]
     addr_maps = get_maps(pid)
     for addr_map in addr_maps:
         print(f"Scaned {addr_map}.")
