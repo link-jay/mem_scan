@@ -27,3 +27,4 @@ main_task.terminate();
 main_task.wait();
 test_task.terminate();
 test_task.wait();
+exit(main_task.returncode)
