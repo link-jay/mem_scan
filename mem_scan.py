@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import sys
 import time
 import readline
@@ -66,13 +67,17 @@ class Str(str):
 
 def get_maps(pid: str) -> list[tuple[int, int]]:
     addr_maps: list[tuple] = []
-    with open("/proc/"+pid+"/maps") as f:
-        for line in f:
-            addr, attr, *_ = line.split()
-            if "r" not in attr:
-                continue
-            start, end = [int(x, 16) for x in addr.split("-")]
-            addr_maps.append((start, end))
+    try:
+        with open("/proc/"+pid+"/maps") as f:
+            for line in f:
+                addr, attr, *_ = line.split()
+                if "r" not in attr:
+                    continue
+                start, end = [int(x, 16) for x in addr.split("-")]
+                addr_maps.append((start, end))
+    except FileNotFoundError:
+        print("Last argument must accept the pid of the target. Please check.", file=sys.stderr)
+        exit(1)
     return addr_maps
             
 def mode_search(buf: bytes, value_info: dict, op: Callable) -> Iterator[int]:
@@ -188,7 +193,6 @@ def __bytes_trans(value_type: str, b_value: bytes) -> Any:
             normal_value = struct.unpack("<d", b_value)[0]
     return normal_value
     
-# TODO: 添加多线程，少于一定数量或DEBUG模式启用单线程，多于一定数量启用多线程
 def search_cond(pid: str, value_info: dict, new_value: Any, op: Callable) -> list[str]:
     new_addr_list = []
     with open("/proc/"+pid+"/mem", "rb") as mem:
@@ -798,8 +802,12 @@ def parse_command(pid, addr_maps):
             list_addr(ori_value_info["addr_list"])
             
 if __name__ == "__main__":
-    assert len(sys.argv) == 2, "Script requires a PID argument."
-    pid       = sys.argv[1]
+    if len(sys.argv) == 1: assert False, "mem_scan requires a PID argument."
+    elif len(sys.argv) > 3: assert False, "mem_scan accept too many arguments."
+    elif len(sys.argv) == 3:
+        if sys.argv[1] == "--debug": DEBUG = True
+        else: assert False, "Unkown argument."
+    pid       = sys.argv[-1]
     addr_maps = get_maps(pid)
     for addr_map in addr_maps:
         print(f"Scaned {addr_map}.")
