@@ -104,10 +104,12 @@ def mode_search(buf: bytes, value_info: dict, op: Callable) -> Iterator[int]:
         if op(1, 1):
             value = __trans_bytes(value_type, value)
             if ALIGN:
-                for off in range(0, len(buf), step):
-                    mem_value = buf[off:off+step]
-                    if op(mem_value, value):
-                        yield off
+                offset = 0
+                while True:
+                    off = buf.find(value, offset)
+                    if off == -1: break
+                    offset = off + step
+                    yield off
             else:
                 for off in range(len(buf)):
                     mem_value = buf[off:off+step]
@@ -130,7 +132,7 @@ def search_value_with_thread(addr_maps: list[tuple[int, int]], value_info: dict,
     inner_maps = addr_maps[:]
     task_pool: list[threading.Thread] = []
     def search_task(addr_map: tuple[int, int]):
-        offset     = 0
+        offset = 0
         start: int = addr_map[0]
         end  : int = addr_map[1]
         size : int = end - start
