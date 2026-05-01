@@ -75,7 +75,6 @@ def get_maps(pid: str) -> list[tuple[int, int]]:
         exit(1)
     return addr_maps
             
-# TODO: 删除ALIGN逻辑
 def mode_search(buf: bytes, value_info: dict, op: Callable) -> Iterator[int]:
     value = value_info["value"]
     step = value_info["width"]
@@ -91,18 +90,12 @@ def mode_search(buf: bytes, value_info: dict, op: Callable) -> Iterator[int]:
     else:
         if op(1, 1):
             value = __trans_bytes(value_type, value)
-            if ALIGN:
-                offset = 0
-                while True:
-                    off = buf.find(value, offset)
-                    if off == -1: break
-                    offset = off + step
-                    yield off
-            else:
-                for off in range(len(buf)):
-                    mem_value = buf[off:off+step]
-                    if op(mem_value, value):
-                        yield off
+            offset = 0
+            while True:
+                off = buf.find(value, offset)
+                if off == -1: break
+                offset = off + step
+                yield off
         else:
             if ALIGN:
                 for off in range(0, len(buf), step):
