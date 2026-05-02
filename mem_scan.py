@@ -14,7 +14,7 @@ import numpy as np
 DEBUG = False
 if DEBUG == False:                           # NORMAL模式
     def debug_log(debug_warning: str, run_warning: str):
-        print(run_warning, file=sys.stderr)
+        print("Error: " + run_warning, file=sys.stderr)
 else:                           # DEBUG模式
     def debug_log(debug_warning: str, run_warning: str):
         assert False, debug_warning
@@ -73,7 +73,7 @@ def get_maps(pid: str) -> list[tuple[int, int]]:
                 start, end = [int(x, 16) for x in addr.split("-")]
                 addr_maps.append((start, end))
     except FileNotFoundError:
-        print("Last argument must accept the pid of the target. Please check.", file=sys.stderr)
+        print("Error: Last argument must accept the pid of the target. Please check.", file=sys.stderr)
         exit(1)
     return addr_maps
             
@@ -175,7 +175,7 @@ def list_addr(addr_list: list[str]):
         for addr in enumerate(addr_list):
             print(f"[{addr[0]}] find it at {addr[1]}.")
     else:
-        print("Not found.", file=sys.stderr)
+        print("Not found.")
 
 def modify_target(target_list: list[str], new_value: bytes):
     with open("/proc/"+pid+"/mem", "rb+") as mem:
@@ -225,7 +225,7 @@ def __trans_int(argv: str | Str, mes: str) -> int|bool:
     try:
         value = int(argv)
     except ValueError:
-        print(mes, file=sys.stderr)
+        print("Error: "+ mes, file=sys.stderr)
         return FAILURE
     return value
 
@@ -233,7 +233,7 @@ def __trans_float(argv: str | Str, mes: str, ex_type = "f32") -> Float|bool:
     try:
         value = Float(argv, ex_type)
     except ValueError:
-        print(mes, file=sys.stderr)
+        print("Error: " + mes, file=sys.stderr)
         return FAILURE
     return value
 
@@ -305,7 +305,7 @@ def __trans_bytes(value_type: str, value: Any) -> bytes:
 
 def __check_lenght(token: str, command: list[str]) -> bool:
     if len(command) != 2:
-        print(f"`{token}` requires exactly 1 argument.", file=sys.stderr)
+        print(f"Error: `{token}` requires exactly 1 argument.", file=sys.stderr)
         return FAILURE
     else:
         return SUCCESS
@@ -319,55 +319,60 @@ def parse_search(ori_value_info: dict, op: Callable = lambda x,y: x == y) -> boo
             ori_value_info["width"] = len(bytes(ori_value_info["value"], "utf-8"))
         case "i8":
             if ori_value_info["value"] > MAX_I8 or ori_value_info["value"] < -MAX_I8:
-                print("`i8` only supports 1-byte values. Use `i16` for larger values.", file=sys.stderr)
+                print("Error: `i8` only supports 1-byte values. Use `i16` for larger values.",
+                      file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 1
         case "u8":
             if ori_value_info["value"] > MAX_U8 or ori_value_info["value"] < 0:
-                print("`u8` only supports 1-byte values. Use `u16` for larger values.", file=sys.stderr)
+                print("Error: `u8` only supports 1-byte values. Use `u16` for larger values.",
+                      file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 1
         case "i16":
             if ori_value_info["value"] > MAX_I16 or ori_value_info["value"] < -MAX_I16:
-                print("`i16` only supports 2-byte values. Use `i32` for larger values.", file=sys.stderr)
+                print("Error: `i16` only supports 2-byte values. Use `i32` for larger values.",
+                      file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 2
         case "u16":
             if ori_value_info["value"] > MAX_I16 or ori_value_info["value"] < 0:
-                print("`u16` only supports 2-byte values. Use `u32` for larger values.", file=sys.stderr)
+                print("Error: `u16` only supports 2-byte values. Use `u32` for larger values.",
+                      file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 2
         case "i32":
             if ori_value_info["value"] > MAX_I32 or ori_value_info["value"] < -MAX_I32:
-                print("`i32` only supports 4-byte values. Use `i64` for larger values.", file=sys.stderr)
+                print("Error: `i32` only supports 4-byte values. Use `i64` for larger values.",
+                      file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 4
         case "u32":
             if ori_value_info["value"] > MAX_U32 or ori_value_info["value"] < 0:
-                print("`u32` only supports 4-byte non-negative values. Use `i64/u64` for larger values.",
+                print("Error: `u32` only supports 4-byte non-negative values. Use `i64/u64` for larger values.",
                       file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 4
         case "i64":
             if ori_value_info["value"] > MAX_I64 or ori_value_info["value"] < -MAX_I64:
-                print("`i64` only supports 8-byte values.", file=sys.stderr)
+                print("Error: `i64` only supports 8-byte values.", file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 8
         case "u64":
             if ori_value_info["value"] > MAX_U64 or ori_value_info["value"] < 0:
-                print("`u64` only supports 8-byte non-negative values.", file=sys.stderr)
+                print("Error: `u64` only supports 8-byte non-negative values.", file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 8
         case "f32":
             if (ori_value_info["value"] > MAX_F32 or ori_value_info["value"] < -MAX_F32
                 or -MIN_F32 < ori_value_info["value"] < 0 or 0 < ori_value_info["value"] < MIN_F32):
-                print("`f32` only supports 4-byte values.", file=sys.stderr)
+                print("Error: `f32` only supports 4-byte values.", file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 4
         case "f64":
             if (ori_value_info["value"] > MAX_F64 or ori_value_info["value"] < -MAX_F64
                 or -MIN_F64 < ori_value_info["value"] < 0 or 0 < ori_value_info["value"] < MIN_F64):
-                print("`f64` only supports 8-byte values.", file=sys.stderr)
+                print("Error: `f64` only supports 8-byte values.", file=sys.stderr)
                 return FAILURE
             ori_value_info["width"] = 8
         case _:
@@ -387,7 +392,7 @@ def parse_cond(ori_value_info: dict, command: list[str], op: Callable) -> bool:
         if command[0] not in ["+", "-"]:
             ori_value_info["addr_list"] = search_cond(pid, ori_value_info, Str(" ".join(command[1:])), op)
         else:
-            print("`str` type does not support `+/-` operators.", file=sys.stderr)
+            print("Error: `str` type does not support `+/-` operators.", file=sys.stderr)
             return FAILURE
     elif ori_value_info["type"] in SEARCH_TYPE[1:]:
         ori_value_info["addr_list"] = search_cond(pid, ori_value_info, new_value, op)
@@ -412,7 +417,7 @@ def __refresher(refresh: bool, refresh_time: float):
 
 def parse_watch(ori_value_info: dict, command: list[str]) -> bool:
     if not ori_value_info["addr_list"]:
-        print("Please search for a value first.", file=sys.stderr)
+        print("Error: Please search for a value first.", file=sys.stderr)
         return FAILURE
     ord_addr_list: list[tuple[int, str]]|bool = list(enumerate(ori_value_info["addr_list"]))
     refresh = False
@@ -424,7 +429,7 @@ def parse_watch(ori_value_info: dict, command: list[str]) -> bool:
             if (number := __trans_int(watch_arg_value[0], "`watch` must receive a number from the list.")) is FAILURE:
               return FAILURE
             if number > len(ori_value_info["addr_list"]) - 1 or number < 0:
-                print(f"{number} is out of range. Use `list` to check valid values.", file=sys.stderr)
+                print(f"Error: {number} is out of range. Use `list` to check valid values.", file=sys.stderr)
                 return FAILURE
             return [(number, ori_value_info["addr_list"][number]),]
         if len(watch_arg_value) == 1:
@@ -438,14 +443,14 @@ def parse_watch(ori_value_info: dict, command: list[str]) -> bool:
                                                   "Refresh time for `watch` requires a non-negative numeric value.")) is FAILURE:
                     return FAILURE
                 if refresh_time < 0:
-                    print("Refresh time for `watch` requires a non-negative numeric value.",
+                    print("Error: Refresh time for `watch` requires a non-negative numeric value.",
                           file=sys.stderr)
                     return FAILURE
         else:
-            print("`watch` received too many arguments. Please check.", file=sys.stderr)
+            print("Error: `watch` received too many arguments. Please check.", file=sys.stderr)
             return FAILURE
     elif len(command) > 2:
-        print("`watch` received too many arguments. Please check.", file=sys.stderr)
+        print("Error: `watch` received too many arguments. Please check.", file=sys.stderr)
         return FAILURE
     if ori_value_info["type"] not in SEARCH_TYPE:
         debug_log("`" + ori_value_info["type"] + "` have not achieved.",
@@ -465,16 +470,16 @@ def parse_watch(ori_value_info: dict, command: list[str]) -> bool:
 
 def parse_delete(ori_value_info: dict, command: list[str]) -> bool:
     if ori_value_info["addr_list"] == []:
-        print("Please search for a value first.", file=sys.stderr)
+        print("Error: Please search for a value first.", file=sys.stderr)
         return FAILURE
     if len(command) == 1:
-        print("`delete` requires accept a argument at least.", file=sys.stderr)
+        print("Error: `delete` requires accept a argument at least.", file=sys.stderr)
         return FAILURE
     for cmd in command[1:]:
         if (number := __trans_int(cmd, "`delete` must receive a number from the list.")) is FAILURE:
             return FAILURE
         if number > len(ori_value_info["addr_list"]) - 1 or number < 0:
-            print(f"{number} is out of range. Use `list` to check valid values.", file=sys.stderr)
+            print(f"Error: {number} is out of range. Use `list` to check valid values.", file=sys.stderr)
             return FAILURE
     for i in sorted(map(int, command[1:]), reverse=True):
         print(f"[{i}]" + ori_value_info["addr_list"].pop(i) +" has been deleted.")
@@ -482,10 +487,10 @@ def parse_delete(ori_value_info: dict, command: list[str]) -> bool:
 
 def parse_set(ori_value_info: dict, command: list[str]) -> bool:
     if not ori_value_info["addr_list"]:
-        print("Please search for a value first.", file=sys.stderr)
+        print("Error: Please search for a value first.", file=sys.stderr)
         return FAILURE
     if len(command) < 2:
-        print("`set` requires a value.", file=sys.stderr)
+        print("Error: `set` requires a value.", file=sys.stderr)
         return FAILURE
     set_arg_value = " ".join(command[1:]).split("/")
     refresh = False
@@ -497,7 +502,7 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
                                                   "Refresh time for `set` requires a non-negative numeric value.")) is FAILURE:
                 return FAILURE
     elif len(set_arg_value) > 2:
-        print("`set` received too many arguments. Please check.", file=sys.stderr)
+        print("Error: `set` received too many arguments. Please check.", file=sys.stderr)
         return FAILURE
     if __check_lenght(ori_value_info["type"], command) is FAILURE and ori_value_info["type"] != "str":
         return FAILURE
@@ -507,59 +512,59 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
         case "str":
             mod_value = set_arg_value[0]; ori_value_info["width"] = len(set_arg_value[0])
             if len(bytes(mod_value, "utf-8")) > ori_value_info["width"]:
-                print("String length must not exceed the original length.", file=sys.stderr)
+                print("Error: String length must not exceed the original length.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
         case "i8":
             if mod_value > MAX_I8 or mod_value < -MAX_I8:
-                print("`i8` only supports 1-byte values.", file=sys.stderr)
+                print("Error: `i8` only supports 1-byte values.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
         case "u8":
             if mod_value > MAX_U8 or mod_value < 0:
-                print("`u8` only supports 1-byte non-negative values.", file=sys.stderr)
+                print("Error: `u8` only supports 1-byte non-negative values.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
         case "i16":
             if mod_value > MAX_I16 or mod_value < -MAX_I16:
-                print("`i16` only supports 2-byte values.", file=sys.stderr)
+                print("Error: `i16` only supports 2-byte values.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
         case "u16":
             if mod_value > MAX_U16 or mod_value < 0:
-                print("`u16` only supports 2-byte non-negative values.", file=sys.stderr)
+                print("Error: `u16` only supports 2-byte non-negative values.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
         case "i32":
             if mod_value > MAX_I32 or mod_value < -MAX_I32:
-                print("`i32` only supports 4-byte values.", file=sys.stderr)
+                print("Error: `i32` only supports 4-byte values.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
         case "u32":
             if mod_value > MAX_U32 or mod_value < 0:
-                print("`u32` only supports 4-byte non-negative values.", file=sys.stderr)
+                print("Error: `u32` only supports 4-byte non-negative values.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
         case "i64":
             if mod_value > MAX_I64 or mod_value < -MAX_I64:
-                print("`i64` only supports 8-byte values.", file=sys.stderr)
+                print("Error: `i64` only supports 8-byte values.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
         case "u64":
             if mod_value > MAX_U64 or mod_value < 0:
-                print("`i64` only supports 8-byte non-negative values.", file=sys.stderr)
+                print("Error: `i64` only supports 8-byte non-negative values.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
         case "f32":
             if (mod_value > MAX_F32 or mod_value < -MAX_F32
                 or -MIN_F32 < mod_value < 0 or 0 < mod_value < MIN_F32):
-                print("`f32` only supports 4-byte values.", file=sys.stderr)
+                print("Error: `f32` only supports 4-byte values.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
         case "f64":
             if (mod_value > MAX_F64 or mod_value < -MAX_F64
                 or -MIN_F64 < mod_value < 0 or 0 < mod_value < MIN_F64):
-                print("`f64` only supports 8-byte values.", file=sys.stderr)
+                print("Error: `f64` only supports 8-byte values.", file=sys.stderr)
                 return FAILURE
             b_value = __trans_bytes(ori_value_info["type"], mod_value)
         case _:
@@ -597,19 +602,19 @@ def parse_command(pid, addr_maps):
 
         elif command[0] == "list":
             if len(command) > 1:
-                print("`list` does not need an argument.", file=sys.stderr)
+                print("Error: `list` does not need an argument.", file=sys.stderr)
                 continue
             list_addr(ori_value_info["addr_list"])
 
         elif command[0] == "help":
             if len(command) > 1:
-                print("`help` does not need an argument.", file=sys.stderr)
+                print("Error: `help` does not need an argument.", file=sys.stderr)
                 continue
             print_help()
 
         elif command[0] == "sh":
             if len(command) < 2:
-                print("`sh` must accept a command.", file=sys.stderr)
+                print("Error: `sh` must accept a command.", file=sys.stderr)
                 continue
             run_sh(command)
 
@@ -632,14 +637,14 @@ def parse_command(pid, addr_maps):
         elif command[0] in ["=", "!=", "<", ">", "+", "-"]:
             if not ori_value_info["addr_list"]:
                 if command[0] in ["+", "-"]:
-                    print(f"`{command[0]}` cannot be used for the first search.", file=sys.stderr)
+                    print(f"Error: `{command[0]}` cannot be used for the first search.", file=sys.stderr)
                     continue
                 if len(command) > 2 and ori_value_info["type"] != "str":
-                    print("`" + ori_value_info["type"] + "`" + " requires exactly 0 or 1 argument.",
+                    print("Error: `" + ori_value_info["type"] + "`" + " requires exactly 0 or 1 argument.",
                           file=sys.stderr)
                     continue
                 elif len(command) == 1:
-                    print(f"`{command[0]}` requires accept a argument.", file=sys.stderr)
+                    print(f"Error: `{command[0]}` requires accept a argument.", file=sys.stderr)
                     continue
                 elif len(command) == 2 or ori_value_info["type"] == "str":
                     if (cond_value := __auto_trans_value(ori_value_info["type"], " ".join(command[1:]))) is FAILURE:
@@ -660,7 +665,7 @@ def parse_command(pid, addr_maps):
                                 continue
             else:
                 if len(command) > 2 and ori_value_info["type"] != "str":
-                    print("`" + ori_value_info["type"] + "`" + " requires exactly 0 or 1 argument.",
+                    print("Error: `" + ori_value_info["type"] + "`" + " requires exactly 0 or 1 argument.",
                           file=sys.stderr)
                     continue
                 if len(command) == 1:
@@ -703,7 +708,7 @@ def parse_command(pid, addr_maps):
                                 continue
                             ori_value_info["value"] -= cond_value
                 else:
-                    print(f"`{command[0]}` does not accept so many values.", file=sys.stderr)
+                    print(f"Error: `{command[0]}` does not accept so many values.", file=sys.stderr)
             ori_value_info["op"] = command[0]
             list_addr(ori_value_info["addr_list"])
 
@@ -722,30 +727,30 @@ def parse_command(pid, addr_maps):
 
         elif command[0] == "reset":
             if len(command) > 1:
-                print("`reset` does not need an argument.", file=sys.stderr)
+                print("Error: `reset` does not need an argument.", file=sys.stderr)
                 continue
             ori_value_info["value"] = None
             ori_value_info["addr_list"] = []
 
         elif command[0] == "align":
             if ori_value_info["type"] == "str":
-                print("`str` type must use align mode; automatically switching to align mode",
+                print("Error: `str` type must use align mode; automatically switching to align mode",
                       file=sys.stderr)
                 continue
             if len(command) != 2:
-                print("`align` requires exactly 2 argument. Valid value: on or off.", file=sys.stderr)
+                print("Error: `align` requires exactly 2 argument. Valid value: on or off.", file=sys.stderr)
                 continue
             if command[1] == "on":
                 ALIGN = True
             elif command[1] == "off":
                 ALIGN = False
             else:
-                print("`align` only accept `on` or `off`.", file=sys.stderr)
+                print("Error: `align` only accept `on` or `off`.", file=sys.stderr)
                 continue
 
         elif command[0] == "status":
             if len(command) > 1:
-                print("`status` does not need an argument.", file=sys.stderr)
+                print("Error: `status` does not need an argument.", file=sys.stderr)
                 continue
             print(f"type:\t{ori_value_info['type']}\n"
                   f"op:\t{ori_value_info['op']}\n"
@@ -774,31 +779,18 @@ def parse_command(pid, addr_maps):
 def parse_args():
     global DEBUG
     if len(sys.argv) == 1:
-        print("mem_scan requires a PID argument.", file=sys.stderr)
+        print("Error: mem_scan requires a PID argument.", file=sys.stderr)
         exit(1)
     i = 1
     while i < len(sys.argv) - 1:
         if "--debug" in sys.argv and "-t" in sys.argv:
-            print("DEBUG mode uses a single thread by default. Modify the source code if custom thread configuration is required.",
+            print("Error: DEBUG mode uses a single thread by default. Modify the source code if custom thread configuration is required.",
                   file=sys.stderr)
             exit(1)
         if sys.argv[i] == "--debug":
             DEBUG = True
-        elif sys.argv[i] == "-t":
-            i += 1
-            if i < len(sys.argv) - 1:
-               try:
-                   THREAD_COUNTS = int(sys.argv[i])
-                   if THREAD_COUNTS > CPU_CORES:
-                       print("warn: too many threads.")
-               except ValueError:
-                   print("`-t` must accept a number argument.", file=sys.stderr)
-                   exit(1)
-            else:
-                   print("`-t` must accept a number argument.", file=sys.stderr)
-                   exit(1)
         else:
-            print("Unkown argument.", file=sys.stderr)
+            print("Error: Unkown argument.", file=sys.stderr)
             exit(1)
         i += 1
 
