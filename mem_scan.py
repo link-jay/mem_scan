@@ -464,14 +464,20 @@ def parse_watch(ori_value_info: dict, command: list[str]) -> bool:
     return SUCCESS
 
 def parse_delete(ori_value_info: dict, command: list[str]) -> bool:
-    if __check_lenght("delete", command) is FAILURE:
+    if ori_value_info["addr_list"] == []:
+        print("Please search for a value first.", file=sys.stderr)
         return FAILURE
-    if (number := __trans_int(command[1], "`delete` must receive a number from the list.")) is FAILURE:
+    if len(command) == 1:
+        print("`delete` requires accept a argument at least.", file=sys.stderr)
         return FAILURE
-    if number > len(ori_value_info["addr_list"]) - 1 or number < 0:
-        print(f"{number} is out of range. Use `list` to check valid values.", file=sys.stderr)
-        return FAILURE
-    print(f"[{number}]" + ori_value_info["addr_list"].pop(number) +" has been deleted.")
+    for cmd in command[1:]:
+        if (number := __trans_int(cmd, "`delete` must receive a number from the list.")) is FAILURE:
+            return FAILURE
+        if number > len(ori_value_info["addr_list"]) - 1 or number < 0:
+            print(f"{number} is out of range. Use `list` to check valid values.", file=sys.stderr)
+            return FAILURE
+    for i in sorted(map(int, command[1:]), reverse=True):
+        print(f"[{i}]" + ori_value_info["addr_list"].pop(i) +" has been deleted.")
     return SUCCESS
 
 def parse_set(ori_value_info: dict, command: list[str]) -> bool:
@@ -710,7 +716,6 @@ def parse_command(pid, addr_maps):
             if parse_watch(ori_value_info, command) is FAILURE:
                 continue
 
-        # TODO: 支持一次删除多个条目
         elif command[0] == "delete":
             if parse_delete(ori_value_info ,command) is FAILURE:
                 continue
