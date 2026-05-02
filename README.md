@@ -19,7 +19,6 @@ Users can input a target value to locate matching memory addresses. The scanning
 
 ## Arguments
 
-`-t num`: Set the number of threads to use for scanning.  
 `--debug`: Enable DEBUG mode. NOTE: `--debug` is mutually exclusive with `-t`; DEBUG mode uses a single thread by default. Modify the source code if custom thread configuration is required.  
 
 ## Commands
