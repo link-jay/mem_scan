@@ -37,7 +37,7 @@ Users can input a target value to locate matching memory addresses. The scanning
 `watch [[number][/[time]]]`: View values in the address list. No argument: view all values; a number: view the specified value. Append `/[time]` for real-time monitoring (default interval: 2 seconds).  
 `align on|off`: Toggle align mode (default: on). It'll be slower by turn off align mode, but more accurately.  
 `status`: Show current type, target value and align mode.  
-`delete number`: Delete the address at the specified index in the list.  
+`delete number ...`: Delete the addresses at the specified index in the list.  
 `set value[/[time]]`: Modify values in the address list. Append `/[time]` for continuous modification (default interval: 1 second).  
 
 
@@ -49,25 +49,28 @@ Open two session and run follow command:
 $ ./test/test.out
 2101.hello, world. Here is 8926518
 2102.hello, world. Here is 8926518
-2103.hello, foold. Here is 8926518
-2104.hello, foold. Here is 8926518
-2105.hello, foold. Here is 123
-2106.hello, foold. Here is 123
+2102.hello, world. Here is 123
+2102.hello, world. Here is 123
+2103.hello, foold. Here is 123
+2104.hello, foold. Here is 123
 ...
 ```
 
 ```bash
-# ./mem_scan $(test1.out) 
-> str hello
-find it at 0x...
-find it at 0x...
-find it at 0x...
-> set foo
-> i32 8926518
-find it at 0x...
-find it at 0x...
-find it at 0x...
+# python ./mem_scan $(test.out) 
+> 8926518
+[0] find it at 0x...
+[1] find it at 0x...
+[2] find it at 0x...
+... 
 > set 123
+> type str
+> hello, world
+[0] find it at 0x...
+[1] find it at 0x...
+[2] find it at 0x...
+...
+> set hello, foo
 ```
 
 ## Arch
