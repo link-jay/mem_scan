@@ -95,6 +95,7 @@ def mode_search(buf: bytes, value_info: dict, op: Callable) -> Iterator[int]:
             yield off
     else:
         # BUG: 初次搜索使用条件搜索无法返回正确信息
+        # TODO: 条件搜索会需要对str进行特殊处理
         # TODO: numpy优化条件搜索
         if ALIGN:
             np_buf = np.frombuffer(buf, SWITCH_TYPE[value_type])

@@ -179,30 +179,30 @@ watch 0
 watch 1
 delete 0
 watch
-# sh echo -------- str --------
-# type str
-# status
-# align on
-# hello, world
-# =
-# =
-# =
-# < 0
-# < 0
-# set hello, foo
-# watch 0
-# watch 1
-# delete 0
-# watch
-# > 0
-# > 0
-# =
-# =
-# set byebye,
-# != 13
-# < 12
-# > 10
-# watch 0
-# watch 1
-# delete 0
-# watch
+sh echo -------- str --------
+type str
+status
+align on
+hello, world
+=
+=
+=
+< 0
+< 0
+set hello, foo
+watch 0
+watch 1
+delete 0
+watch
+> 0
+> 0
+=
+=
+set byebye,
+!= 13
+< 12
+> 10
+watch 0
+watch 1
+delete 0
+watch
