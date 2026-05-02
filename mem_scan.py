@@ -570,6 +570,7 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
 
 def parse_command(pid, addr_maps):
     ori_value_info = {
+        "op"    : None,
         "value" : None,
         "type"  : "i32",
         "width" : 0,
@@ -697,7 +698,8 @@ def parse_command(pid, addr_maps):
                             ori_value_info["value"] -= cond_value
                 else:
                     print(f"`{command[0]}` does not accept so many values.", file=sys.stderr)
-                list_addr(ori_value_info["addr_list"])
+            ori_value_info["op"] = command[0]
+            list_addr(ori_value_info["addr_list"])
 
 
         elif command[0] == "set":
@@ -736,12 +738,12 @@ def parse_command(pid, addr_maps):
                 print("`align` only accept `on` or `off`.", file=sys.stderr)
                 continue
 
-        # TODO: 增加op信息
         elif command[0] == "status":
             if len(command) > 1:
                 print("`status` does not need an argument.", file=sys.stderr)
                 continue
-            print(f"type: \t{ori_value_info['type']}\n"
+            print(f"type:\t{ori_value_info['type']}\n"
+                  f"op:\t{ori_value_info['op']}\n"
                   f"value:\t{ori_value_info['value']}")
             if ALIGN: print(f"align:\ton")
             else: print(f"align:\toff")
