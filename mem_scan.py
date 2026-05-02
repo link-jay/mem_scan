@@ -8,7 +8,9 @@ import subprocess
 import signal
 from collections.abc import Callable
 from typing import Any, Iterator
+import numpy as np
 
+# TODO: 增加时间监控
 DEBUG = False
 if DEBUG == False:                           # NORMAL模式
     def debug_log(debug_warning: str, run_warning: str):
@@ -75,11 +77,15 @@ def get_maps(pid: str) -> list[tuple[int, int]]:
         exit(1)
     return addr_maps
             
+SWITCH_TYPE = {
+    "i8": "int8","u8": "uint8", "i16": "int16", "u16": "uint16", "i32": "int32", "u32": "uint32",
+    "i64": "int64", "u64": "uint64", "f32": "float32", "f64": "float64"
+}
 def mode_search(buf: bytes, value_info: dict, op: Callable) -> Iterator[int]:
     value = value_info["value"]
     step = value_info["width"]
     value_type = value_info["type"]
-    if value_type == "str" and not op(1, 1):
+    if value_type == "str" and not op(1, 1): # Q: 这是干嘛的？
         value = __trans_bytes(value_type, value)
         offset = 0
         while True:
@@ -97,11 +103,10 @@ def mode_search(buf: bytes, value_info: dict, op: Callable) -> Iterator[int]:
                 offset = off + step
                 yield off
         else:
+            # TODO: numpy优化条件搜索
             if ALIGN:
-                for off in range(0, len(buf), step):
-                    mem_value = __bytes_trans(value_type, buf[off:off+step])
-                    if op(mem_value, value):
-                        yield off
+                np_buf = np.frombuffer(buf, SWITCH_TYPE[value_type])
+                return np.where(op(np_buf, value))[0].tolist()
             else:
                 for off in range(len(buf)):
                     mem_value = __bytes_trans(value_type, buf[off:off+step])
@@ -313,7 +318,7 @@ def __check_lenght(token: str, command: list[str]) -> bool:
     else:
         return SUCCESS
 
-SEARCH_TYPE = ["str", "i8", "u8", "u16", "i16", "i32", "i64", "u32", "u64", "f32", "f64"]
+SEARCH_TYPE = ["str", "i8", "u8", "i16", "u16", "i32", "u32", "i64", "u64", "f32", "f64"]
 def parse_search(ori_value_info: dict, op: Callable = lambda x,y: x == y) -> bool:
     if __auto_trans_ori(ori_value_info) is FAILURE:
         return FAILURE
