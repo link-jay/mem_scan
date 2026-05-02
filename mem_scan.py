@@ -94,12 +94,18 @@ def mode_search(buf: bytes, value_info: dict, op: Callable) -> Iterator[int]:
             offset = off + step
             yield off
     else:
-        # BUG: 初次搜索使用条件搜索无法返回正确信息
-        # TODO: 条件搜索会需要对str进行特殊处理
-        # TODO: numpy优化条件搜索
-        if ALIGN:
+        if value_type == "str":
+            buf = buf[:len(buf) - len(buf) % step]
+            np_buf = np.frombuffer(buf, f"S{step}")
+            offs = (np.where(op(np_buf, value.encode("utf-8")))[0] * step).tolist()
+            for off in offs:
+                yield off
+        elif ALIGN:
             np_buf = np.frombuffer(buf, SWITCH_TYPE[value_type])
-            return np.where(op(np_buf, value))[0].tolist()
+            offs = (np.where(op(np_buf, value))[0] * step).tolist()
+            for off in offs:
+                yield off
+        # TODO: numpy优化条件搜索
         else:
             for off in range(len(buf)):
                 mem_value = __bytes_trans(value_type, buf[off:off+step])
@@ -119,8 +125,8 @@ def search_value(addr_maps: list[tuple[int, int]], value_info: dict, op: Callabl
                 buf: bytes = mem.read(size)
             except OSError:
                 continue
-            addrs = map(lambda x: hex(start + x), mode_search(buf, value_info, op))
-            addr_list.extend(list(addrs))
+            addrs = list(map(lambda x: hex(start + x), mode_search(buf, value_info, op)))
+            addr_list.extend(addrs)
     return addr_list
 
 def __bytes_trans(value_type: str, b_value: bytes) -> Any:
@@ -303,13 +309,6 @@ def __trans_bytes(value_type: str, value: Any) -> bytes:
         case _:
             assert False, "Here should not be arrived."
     return b_value
-
-def __check_lenght(token: str, command: list[str]) -> bool:
-    if len(command) != 2:
-        print(f"Error: `{token}` requires exactly 1 argument.", file=sys.stderr)
-        return FAILURE
-    else:
-        return SUCCESS
 
 SEARCH_TYPE = ["str", "i8", "u8", "i16", "u16", "i32", "u32", "i64", "u64", "f32", "f64"]
 def parse_search(ori_value_info: dict, op: Callable = lambda x,y: x == y) -> bool:
@@ -505,7 +504,8 @@ def parse_set(ori_value_info: dict, command: list[str]) -> bool:
     elif len(set_arg_value) > 2:
         print("Error: `set` received too many arguments. Please check.", file=sys.stderr)
         return FAILURE
-    if __check_lenght(ori_value_info["type"], command) is FAILURE and ori_value_info["type"] != "str":
+    if len(set_arg_value[0].split()) > 2 and ori_value_info["type"] != "str":
+        print(f"Error: `{ori_value_info['type']}` type requires exactly a argument.")
         return FAILURE
     if (mod_value := __auto_trans_value(ori_value_info["type"], set_arg_value[0])) is FAILURE:
         return FAILURE
@@ -628,6 +628,7 @@ def parse_command(pid, addr_maps):
                 else:
                     ALIGN = True
                 ori_value_info["type"]  = command[1]
+                ori_value_info["op"] = None
                 ori_value_info["value"] = None
                 ori_value_info["width"] = 0
                 ori_value_info["addr_list"] = []
@@ -790,8 +791,12 @@ def parse_args():
             exit(1)
         if sys.argv[i] == "--debug":
             DEBUG = True
+        elif sys.argv[i] == "--help":
+            print("--debug:\tuse debug mode."
+                  "--help:\tprint this message.")
+            exit(0)
         else:
-            print("Error: Unkown argument.", file=sys.stderr)
+            print("Error: Unknown argument.", file=sys.stderr)
             exit(1)
         i += 1
 
