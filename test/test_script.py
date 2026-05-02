@@ -15,7 +15,7 @@ pid = str(test_task.pid)
 time.sleep(1)
 
 main_task = subprocess.Popen(". ../venv/bin/activate && "
-                             "../mem_scan.py " + pid,
+                             "python ../mem_scan.py " + pid,
                              shell=True, bufsize=0, stdin=subprocess.PIPE, text=True)
 
 with open("/home/rudyous/Programs/mem_scan/test/commands.txt") as cmds:

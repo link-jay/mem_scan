@@ -85,7 +85,7 @@ def mode_search(buf: bytes, value_info: dict, op: Callable) -> Iterator[int]:
     value = value_info["value"]
     step = value_info["width"]
     value_type = value_info["type"]
-    if value_type == "str" and not op(1, 1): # Q: 这是干嘛的？
+    if op(1, 1):
         value = __trans_bytes(value_type, value)
         offset = 0
         while True:
@@ -94,24 +94,16 @@ def mode_search(buf: bytes, value_info: dict, op: Callable) -> Iterator[int]:
             offset = off + step
             yield off
     else:
-        if op(1, 1):
-            value = __trans_bytes(value_type, value)
-            offset = 0
-            while True:
-                off = buf.find(value, offset)
-                if off == -1: break
-                offset = off + step
-                yield off
+        # BUG: 初次搜索使用条件搜索无法返回正确信息
+        # TODO: numpy优化条件搜索
+        if ALIGN:
+            np_buf = np.frombuffer(buf, SWITCH_TYPE[value_type])
+            return np.where(op(np_buf, value))[0].tolist()
         else:
-            # TODO: numpy优化条件搜索
-            if ALIGN:
-                np_buf = np.frombuffer(buf, SWITCH_TYPE[value_type])
-                return np.where(op(np_buf, value))[0].tolist()
-            else:
-                for off in range(len(buf)):
-                    mem_value = __bytes_trans(value_type, buf[off:off+step])
-                    if op(mem_value, value):
-                        yield off
+            for off in range(len(buf)):
+                mem_value = __bytes_trans(value_type, buf[off:off+step])
+                if op(mem_value, value):
+                    yield off
 
 def search_value(addr_maps: list[tuple[int, int]], value_info: dict, op: Callable) -> list[str]:
     addr_list: list[str] = []
@@ -716,6 +708,7 @@ def parse_command(pid, addr_maps):
             if parse_watch(ori_value_info, command) is FAILURE:
                 continue
 
+        # TODO: 支持一次删除多个条目
         elif command[0] == "delete":
             if parse_delete(ori_value_info ,command) is FAILURE:
                 continue
@@ -743,6 +736,7 @@ def parse_command(pid, addr_maps):
                 print("`align` only accept `on` or `off`.", file=sys.stderr)
                 continue
 
+        # TODO: 增加op信息
         elif command[0] == "status":
             if len(command) > 1:
                 print("`status` does not need an argument.", file=sys.stderr)
