@@ -94,8 +94,13 @@ def mode_search(buf: bytes, value_info: dict, op: Callable) -> Iterator[int]:
             offset = off + step
             yield off
     else:
-        # TODO: 条件搜索会需要对str进行特殊处理
-        if ALIGN:
+        if value_type == "str":
+            buf = buf[:len(buf) - len(buf) % step]
+            np_buf = np.frombuffer(buf, f"S{step}")
+            offs = (np.where(op(np_buf, value.encode("utf-8")))[0] * step).tolist()
+            for off in offs:
+                yield off
+        elif ALIGN:
             np_buf = np.frombuffer(buf, SWITCH_TYPE[value_type])
             offs = (np.where(op(np_buf, value))[0] * step).tolist()
             for off in offs:
@@ -786,8 +791,12 @@ def parse_args():
             exit(1)
         if sys.argv[i] == "--debug":
             DEBUG = True
+        elif sys.argv[i] == "--help":
+            print("--debug:\tuse debug mode."
+                  "--help:\tprint this message.")
+            exit(0)
         else:
-            print("Error: Unkown argument.", file=sys.stderr)
+            print("Error: Unknown argument.", file=sys.stderr)
             exit(1)
         i += 1
 

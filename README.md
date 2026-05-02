@@ -17,9 +17,14 @@ Users can input a target value to locate matching memory addresses. The scanning
 * [x] monitor value continuously
 * [x] support shell command
 
+## Requires
+- numpy
+- mypy (dev only)
+
 ## Arguments
 
-`--debug`: Enable DEBUG mode. NOTE: `--debug` is mutually exclusive with `-t`; DEBUG mode uses a single thread by default. Modify the source code if custom thread configuration is required.  
+`--debug`: Enable DEBUG mode.  
+`--help`: print help message.  
 
 ## Commands
 
@@ -28,7 +33,8 @@ Users can input a target value to locate matching memory addresses. The scanning
 `type [i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|str]`: Set the value type for search (default: `i32`).  
 `str|num`: Search for the specified `str/num` value. Repeating is equivalent to using `=`.  
 `= [str|num]`: Search again using the last search result. No argument means search for the original value; a new `str/num` argument means search for the new value of the same type. Acts like a direct search on first use.  
-`>/< [str|num]`: Search for values greater/less than the specified `num`. No argument means search relative to the original value. For `str`, these commands function the same as `!=`. Can be used for the first search.  
+`>/< [str|num]`: Search for values greater or less than the specified str/num. No argument means search relative to the original value. For strings, it works the same as !=. Can be used for the first search.  
+Note that conditional comparison is meaningless for string types. It is only reserved for symmetry, and string matching results are not guaranteed.  
 `!=`: Search for values not equal to the specified `str/num`. No argument means search relative to the original value. Can be used for the first search.  
 `+/- [num]`: Search for values by adding or subtracting `num`. If no argument is provided, the behavior is the same as `>/<`. Not allowed for strings. Can not be used for the first search.  
 `reset`: Reset the search results.  
