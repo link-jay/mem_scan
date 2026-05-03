@@ -83,7 +83,7 @@ SWITCH_TYPE = {
 }
 def mode_search(buf: bytes, value_info: dict, op: Callable) -> Iterator[int]:
     value = value_info["value"]
-    step = value_info["width"]
+    width = value_info["width"]
     value_type = value_info["type"]
     if op(1, 1):
         value = __trans_bytes(value_type, value)
@@ -91,26 +91,28 @@ def mode_search(buf: bytes, value_info: dict, op: Callable) -> Iterator[int]:
         while True:
             off = buf.find(value, offset)
             if off == -1: break
-            offset = off + step
+            offset = off + width
             yield off
     else:
         if value_type == "str":
-            buf = buf[:len(buf) - len(buf) % step]
-            np_buf = np.frombuffer(buf, f"S{step}")
-            offs = (np.where(op(np_buf, value.encode("utf-8")))[0] * step).tolist()
+            buf = buf[:len(buf) - len(buf) % width]
+            np_buf = np.frombuffer(buf, f"S{width}")
+            offs = (np.where(np_buf != value.encode("utf-8"))[0] * width).tolist()
             for off in offs:
                 yield off
-        elif ALIGN:
-            np_buf = np.frombuffer(buf, SWITCH_TYPE[value_type])
-            offs = (np.where(op(np_buf, value))[0] * step).tolist()
+            return
+        np_buf = np.frombuffer(buf, SWITCH_TYPE[value_type])
+        offs = (np.where(op(np_buf, value))[0] * width).tolist()
+        if ALIGN:
             for off in offs:
                 yield off
-        # TODO: numpy优化条件搜索
         else:
-            for off in range(len(buf)):
-                mem_value = __bytes_trans(value_type, buf[off:off+step])
-                if op(mem_value, value):
-                    yield off
+            for i in range(1, width):
+                buf = buf[i:i-width]
+                np_buf = np.frombuffer(buf, SWITCH_TYPE[value_type])
+                offs.extend((np.where(op(np_buf, value))[0] * width + i).tolist())
+            for off in sorted(set(offs)):
+                yield off
 
 def search_value(addr_maps: list[tuple[int, int]], value_info: dict, op: Callable) -> list[str]:
     addr_list: list[str] = []
