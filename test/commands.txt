@@ -1,5 +1,15 @@
+# `#`开头的行会被忽略
 help
 
+sh echo -------- error test --------
+# 这部分的内容应该全部出错
+foo
+bar
+baz
+delete
+watch
+set
+list
 sh echo -------- i32 --------
 status
 align off

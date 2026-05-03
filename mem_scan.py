@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!venv/bin/python3
 
 import sys
 import time
@@ -785,22 +785,14 @@ def parse_args():
     if len(sys.argv) == 1:
         print("Error: mem_scan requires a PID argument.", file=sys.stderr)
         exit(1)
-    i = 1
-    while i < len(sys.argv) - 1:
-        if "--debug" in sys.argv and "-t" in sys.argv:
-            print("Error: DEBUG mode uses a single thread by default. Modify the source code if custom thread configuration is required.",
-                  file=sys.stderr)
-            exit(1)
-        if sys.argv[i] == "--debug":
-            DEBUG = True
-        elif sys.argv[i] == "--help":
-            print("--debug:\tuse debug mode."
-                  "--help:\tprint this message.")
-            exit(0)
-        else:
-            print("Error: Unknown argument.", file=sys.stderr)
-            exit(1)
-        i += 1
+    if sys.argv[1] == "--debug":
+        DEBUG = True
+        return
+    elif sys.argv[1] == "--help":
+        print("--debug:\tuse debug mode.",
+              "--help:\t\tprint this message.",
+              sep="\n");
+        exit(0)
 
 if __name__ == "__main__":
     parse_args()
