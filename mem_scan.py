@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!venv/bin/python3
 
 import sys
 import time
@@ -10,8 +10,50 @@ from collections.abc import Callable
 from typing import Any, Iterator
 import numpy as np
 
-# TODO: 增加时间监控
 DEBUG = False
+
+def parse_args():
+    global DEBUG
+    if len(sys.argv) == 1:
+        print("Error: mem_scan requires a PID argument.", file=sys.stderr)
+        exit(1)
+    if sys.argv[1] == "--debug":
+        DEBUG = True
+        return
+    elif sys.argv[1] == "--help":
+        print("--debug:\tuse debug mode.",
+              "--help:\t\tprint this message.",
+              sep="\n");
+        exit(0)
+parse_args()
+
+class time_monitor():
+    time: float = 0.0
+
+    @staticmethod
+    def run(func: Callable) -> Callable:
+        if DEBUG:
+            def wrapper(*args) -> Any:
+                start = time.perf_counter()
+                ret = func(*args)
+                end = time.perf_counter()
+                time_monitor.time = end - start
+                return ret
+            return wrapper
+        else:
+            return func
+
+    @staticmethod
+    def dump(func: Callable) -> Callable:
+        if DEBUG:
+            def wrapper(*args) -> Any:
+                ret = func(*args)
+                print(f"Cost time: {time_monitor.time:.3f}")
+                return ret
+            return wrapper
+        else:
+            return func
+
 if DEBUG == False:                           # NORMAL模式
     def debug_log(debug_warning: str, run_warning: str):
         print("Error: " + run_warning, file=sys.stderr)
@@ -81,6 +123,7 @@ SWITCH_TYPE = {
     "i8": "int8","u8": "uint8", "i16": "int16", "u16": "uint16", "i32": "int32", "u32": "uint32",
     "i64": "int64", "u64": "uint64", "f32": "float32", "f64": "float64"
 }
+@time_monitor.run
 def mode_search(buf: bytes, value_info: dict, op: Callable) -> Iterator[int]:
     value = value_info["value"]
     width = value_info["width"]
@@ -179,6 +222,7 @@ def watch_value(addr: str, value_width: int) -> bytes:
             except OSError:
                 assert False, "Don't know how to deal yet."
 
+@time_monitor.dump
 def list_addr(addr_list: list[str]):
     if addr_list:
         for addr in enumerate(addr_list):
@@ -780,30 +824,8 @@ def parse_command(pid, addr_maps):
                     continue
             list_addr(ori_value_info["addr_list"])
             
-def parse_args():
-    global DEBUG
-    if len(sys.argv) == 1:
-        print("Error: mem_scan requires a PID argument.", file=sys.stderr)
-        exit(1)
-    i = 1
-    while i < len(sys.argv) - 1:
-        if "--debug" in sys.argv and "-t" in sys.argv:
-            print("Error: DEBUG mode uses a single thread by default. Modify the source code if custom thread configuration is required.",
-                  file=sys.stderr)
-            exit(1)
-        if sys.argv[i] == "--debug":
-            DEBUG = True
-        elif sys.argv[i] == "--help":
-            print("--debug:\tuse debug mode."
-                  "--help:\tprint this message.")
-            exit(0)
-        else:
-            print("Error: Unknown argument.", file=sys.stderr)
-            exit(1)
-        i += 1
-
 if __name__ == "__main__":
-    parse_args()
+    # NOTE: 命令行参数检查逻辑并不在此处，文件首部位置查看
     pid = sys.argv[-1]
     addr_maps = get_maps(pid)
     for addr_map in addr_maps:
